@@ -116,7 +116,7 @@ Markov <- function(ciag=ciag,historia=5){
 
 
 
-data <- read_delim("data/wyniki_new.csv", delim = ";") %>%
+data <- read_delim("dane/wyniki_new.csv", delim = ";") %>%
   rename_at(vars(matches("^\\d")), ~str_c("d", .x)) %>%
   mutate_at(vars(matches("^d\\d")), as.integer) %>%
   rename(id = X)
