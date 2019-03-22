@@ -1,0 +1,362 @@
+---
+title: "Motivational and situational determinants ability to produce random series"
+description: |
+    Method section.
+author:
+  - name: Szymon Talaga, Mikołaj Biesaga
+    affiliation: The Robert Zajonc Institute for Social Studies
+    affiliation_url: www.iss.uw.edu.pl/en/
+date: "`r Sys.Date()`"
+output: radix::radix_article
+---
+
+```{r setup_env, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 8, fig.asp = 1)
+```
+
+```{r setup}
+## Wczytaj pakiety
+library(magrittr)
+library(tidyverse)
+library(reticulate)
+library(lattice)
+library(zoo)
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+library(acss)
+## Wczytaj policzone wyniki Starego algorytmu
+load("dane/losowosc.RData")
+## Ustaw temat ggplot()
+theme_set(theme_bw())
+## Środowisko Conda
+use_condaenv("bdm")
+```
+
+```{r load_and_prepare_data}
+## Wczytanie danych z wyniki_new.csv
+data <- read_delim("dane/wyniki_new.csv", delim = ";") %>%
+    rename_at(vars(matches("^\\d")), ~str_c("d", .x)) %>%
+    mutate_at(vars(matches("^d\\d")), as.integer) %>%
+    rename(id = X)
+
+## Zamiana na format long
+data_long <- gather(data, key = "Index", value = "Bit", matches("^d\\d")) %>%
+    filter(!is.na(Bit)) %>%
+    arrange(id) %>%
+    group_by(id) %>% 
+    summarize(seq = list(Bit)) %>%
+    ungroup %>%
+    filter(map_int(seq, length) >= 290)
+``` 
+
+```{r compute_Markov}
+## Funkcja służąca do liczenia prawdopodobieństwa z tabeli wyników, która jest wynikiem Starego Algorytmu.
+prob <- function(list){
+  list %>%
+  lapply(function(table){
+    table %>%
+      mutate(p = if_else(item == ciag, TRUE, FALSE)) %>%
+      summarise(sum(p)/length(p))
+  }) %>%
+  unlist()
+}
+
+## Tabela z prawdopodbieństwami dla każdego ciągu dla różnej historii.
+prob_frame <- tibble(hist_2 = prob(table_2),
+                         hist_3 = prob(table_3),
+                         hist_4 = prob(table_4),
+                         hist_5 = prob(table_5),
+                         hist_6 = prob(table_6),
+                         hist_7 = prob(table_7),
+                         hist_8 = prob(table_8),
+                         hist_9 = prob(table_9),
+                         hist_10 = prob(table_10),
+                         hist_11 = prob(table_11)) %>%
+  mutate(id = 1:n())
+
+## Wykres pokazujący, która historia daje najelpsze wyniki, tzn. na podstawie której historii wyniki są najwyższe.
+prob_frame %>%
+  gather(key = "historia",
+         value = "prob",
+         hist_2:hist_11) %>%
+  ggplot(aes(x = historia, y = prob, color = historia)) +
+  geom_boxplot()
+```
+Tutaj tak naprawdę chciałbym pokazać, która historia jest najważniejsza w tym prawdopodobieństwie. Czy np. na wielkość tej zgodności najbardziej wpływa historia jeden czy może dwa itp. Pomysł był taki, żeby zmienność prawdopodbieństwa wyjaśniać za pomocą liczby odpowiednich historii.
+```{r model_hist_6}
+## Przygotowanie danych do policzenia modelu
+hist_6 <- table_6 %>%
+  lapply(function(table){
+    table %>%
+      filter(item == ciag) %>%            
+      mutate(sum = n()) %>%
+      group_by(history) %>%
+      summarise(freq = n()/sum[1])
+  }) %>%
+  bind_rows(.id = "id") %>%
+  mutate(id = as.integer(id)) %>%
+  filter(history != -1) %>%
+  spread(history,freq) %>%
+  left_join(prob_frame %>%
+              select(hist_6,id)) %>% 
+  rename("hist1" = "1",
+         "hist2" = "2",
+         "hist3" = "3",
+         "hist4" = "4",
+         "hist5" = "5",
+         "hist6" = "6") %>%
+  left_join(data %>%
+              select(id, Age, Sex, Hand, Condition, Faculty))
+
+## Model wyjaśniający prawdopodobieństwo na podstawie historii 6 przy pomocy liczebności historii, choć to chyba nie ma specjalnie sensu.
+hist_6 %>%
+  lm(hist_6 ~ hist1 + hist2 + hist3 + hist4 + hist5 + hist6 + Age + Sex + Hand + Condition + Faculty, data = .) %>%
+  summary()
+
+```
+
+```{python prepare_strings}
+import numpy as np
+import pandas as pd
+from bdm import BDMRecursive as BDM
+
+def window(seq, k=7):
+    return np.array([ (seq[i:(i+k)]) for i in range(len(seq) - k) ])
+    
+D = r.D
+D.id = D.id.astype(int)
+D.seq = D.seq.apply(lambda x: np.array(x, dtype=int)[:290])
+
+bdm = BDM(ndim=1, min_length=7)
+
+seq7 = pd.DataFrame({
+    'id': r.D.id.astype(int),
+    'cmx': D.seq.apply(bdm.nbdm)
+    'cmx_w': D.seq.apply(lambda x: window(x)),
+})
+
+seq5 = pd.DataFrame({
+    'id': r.D.id.astype(int),
+    'cmx_w': D.seq.apply(lambda x: window(x, k = 5))
+})
+
+seq9 = pd.DataFrame({
+    'id': r.D.id.astype(int),
+    'cmx_w': D.seq.apply(lambda x: window(x, k = 9))
+})
+
+
+
+
+
+
+
+C = pd.DataFrame({
+    'id': r.D.id.astype(int),
+    'cmx': D.seq.apply(bdm.nbdm),
+    'cmx_w': D.seq.apply(lambda x: window_bdm(x, bdm)),
+})
+C = C.loc[C.cmx >= C.cmx.quantile(.05), :]
+
+```
+
+```{r compute_acss}
+# seq <- py$seq7
+# 
+# list_acss <- seq %$%
+#   cmx_w %>%
+#   lapply(function(table){
+#     vector <- vector(mode = 'double')
+#     for (i in c(1:nrow(table))){
+#       vector[i] <- acss(table[i,] %>% paste0(collapse = ""))[1]
+#     }
+#     return(vector)
+#   })
+
+seq9 <- py$seq9
+
+list_acss9 <- seq9 %$%
+  cmx_w %>%
+  lapply(function(table){
+    vector <- vector(mode = 'double')
+    for (i in c(1:nrow(table))){
+      vector[i] <- acss(table[i,] %>% paste0(collapse = ''))[1]
+    }
+    return(vector)
+  })
+
+seq5 <- py$seq5
+
+list_acss5 <- seq5 %$%
+  cmx_w %>%
+  lapply(function(table){
+    vector <- vector(mode = 'double')
+    for (i in c(1:nrow(table))){
+      vector[i] <- acss(table[i,] %>% paste0(collapse = ''))[1]
+    }
+    return(vector)
+  })
+
+```
+
+```{r}
+data_acss <- tibble()
+for (i in c(1:183)){
+  temp <- tibble(acss = list_acss[[i]] %>% unlist(), id = i)
+  data_acss <- bind_rows(data_acss, temp)
+}
+
+data_acss5 <- tibble()
+for (i in c(1:183)){
+  temp <- tibble(acss = list_acss5[[i]] %>% unlist(), id = i)
+  data_acss5 <- bind_rows(data_acss5, temp)
+}
+
+data_acss9 <- tibble()
+for (i in c(1:183)){
+  temp <- tibble(acss = list_acss9[[i]] %>% unlist(), id = i)
+  data_acss9 <- bind_rows(data_acss9, temp)
+}
+
+data_acss <- data_acss %>%
+  left_join(data %>% select(id, Age, Sex, Hand, Condition, Faculty, Predict)) %>% 
+  group_by(id) %>%
+  mutate(idx = 1:n())
+  
+```
+
+```{r}
+data_acss %>%
+  group_by(idx, Condition) %>%
+  summarise(acss = mean(acss)) %>%
+  ggplot(aes(x = idx, y = (acss), color = Condition)) +
+  geom_line()
+
+```
+
+```{r}
+data_acss %>%
+  ggplot(aes(x = log(acss), group = Condition)) +
+  facet_wrap(~Condition) +
+  geom_histogram()
+```
+
+```{r}
+model <- lmer(acss ~ idx * Condition + (1 | id), data = data_acss)
+summary(model)
+```
+
+```{python compute_bdm}
+from bdm import BDM
+
+def window_bdm(seq, bdm, k=60):
+    return np.array([ bdm.nbdm(seq[i:(i+k)]) for i in range(len(seq) - k) ])
+
+bdm = BDM(ndim=1)
+
+C = pd.DataFrame({
+    'id': r.D.id.astype(int),
+    'cmx': D.seq.apply(bdm.nbdm),
+    'cmx_w': D.seq.apply(lambda x: window_bdm(x, bdm)),
+})
+C = C.loc[C.cmx >= C.cmx.quantile(.05), :]
+```
+
+# Data description
+
+Below we compute the following datasets:
+
+1. `C` --- dataset with moving complexities in sliding window of length 60 (`cmx_w`) + with smoothing
+           based on centered rolling mean with $k=30$.
+2. `X` --- the initial dataset with added bdm complexity estimates for the full sequences.
+           This dataset contains also measures of monotonic (Spearman) correlations between
+           time and moving complexity: `mc_w` and `mc_r`.
+3. `W` --- average time series for `cmx_w` and `cmx_r`.
+4. `G` --- average time series for `cmx_w` and `cmx_r` by condition.
+
+```{r get_and_process_complexity_data}
+C <- tbl_df(py$C)
+X <- select(data, -matches("^d\\d")) %>%
+    filter(id %in% C$id) %>%
+    left_join(select(C, id, cmx), by = "id")
+C <- C %>%
+    unnest() %>%
+    group_by(id) %>%
+    mutate(
+        idx = 1:n(),
+        cmx_r = rollmean(cmx_w, k = 30, align = "center", na.pad = TRUE)
+    ) %>%
+    ungroup %>%
+    left_join(select(X, -cmx), by = "id")
+X <- X %>%
+    left_join(
+        group_by(C, id) %>% summarize(
+            cmx_hi = mean(cmx_w >= .8),
+            cmx_w = mean(cmx_w)
+        ),
+        by = "id"
+    ) %>% mutate(
+    mc_w = C %>%
+        split(.$id) %>%
+        map_dbl(~cor(.x$idx, .x$cmx_w, method = "spearman", use = "pairwise.complete")) %>%
+        unname,
+    mc_r = C %>%
+        split(.$id) %>%
+        map_dbl(~cor(.x$idx, .x$cmx_r, method = "spearman", use = "pairwise.complete")) %>%
+        unname
+    )
+    
+W <- C %>%
+    group_by(idx) %>%
+    summarize(
+        cmx_w = mean(cmx_w),
+        cmx_r = mean(cmx_r)
+    ) %>%
+    ungroup
+G <- C %>%
+    group_by(Condition, idx) %>%
+    summarize(
+        cmx_w = mean(cmx_w),
+        cmx_r = mean(cmx_r)
+    ) %>%
+    ungroup
+```
+
+# Moving complexity time series for all observations
+
+```{r viz_complexity}
+C %>%
+    ggplot(aes(x = idx, y = cmx_w, group = id)) +
+    geom_line(alpha = .25)
+C %>%
+    ggplot(aes(x = idx, y = cmx_r, group = id)) +
+    geom_line(alpha = .25)
+```
+
+# Averaged moving complexity time series
+
+```{r average_moving_complexity}
+ W %>%
+    ggplot(aes(x = idx)) +
+    geom_line(aes(y = cmx_w)) +
+    geom_line(aes(y = cmx_r), linetype = 2)
+```
+
+```{r average_moving_complexity_by_condition}
+ G %>%
+    ggplot(aes(x = idx, group = Condition, color = Condition)) +
+    geom_line(aes(y = cmx_w)) +
+    geom_line(aes(y = cmx_r), linetype = 2)
+```
+
+# Linear mixed effects model
+
+```{r lmm_for_moving_complexity}
+lmm <- lmer(cmx_w ~ idx * Condition + (1 | id), data = C)
+summary(lmm)
+```
+
+```{r lmm_random_effects_anova}
+ranova(lmm)
+```

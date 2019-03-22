@@ -128,16 +128,25 @@ D <- gather(data, key = "Index", value = "Bit", matches("^d\\d")) %>%
   summarize(seq = list(Bit)) %>%
   ungroup()
 
-
+cat('Historia 2')
 table_2 <- lapply(D[[2]], Markov, historia = 2)
+cat('Historia 3')
 table_3 <- lapply(D[[2]], Markov, historia = 3)
+cat('Historia 4')
 table_4 <- lapply(D[[2]], Markov, historia = 4)
+cat('Historia 5')
 table_5 <- lapply(D[[2]], Markov, historia = 5)
+cat('Historia 6')
 table_6 <- lapply(D[[2]], Markov, historia = 6)
+cat('Historia 7')
 table_7 <- lapply(D[[2]], Markov, historia = 7)
+cat('Historia 8')
 table_8 <- lapply(D[[2]], Markov, historia = 8)
+cat('Historia 9')
 table_9 <- lapply(D[[2]], Markov, historia = 9)
+cat('Historia 10')
 table_10 <- lapply(D[[2]], Markov, historia = 10)
+cat('Historia 11')
 table_11 <- lapply(D[[2]], Markov, historia = 11)
 
 save.image("dane/losowosc.Rmd")
