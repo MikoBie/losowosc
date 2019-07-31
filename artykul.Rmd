@@ -648,16 +648,31 @@ data2_long <- data2 %>%
   gather(key = "Index", value = "Bit", matches("war[[:digit:]]")) %>%
   filter(!is.na(Bit)) %>% 
   filter(Bit != 99) %>% 
-  mutate(klucz = if_else(grepl(x = Index, pattern = "time"), 'time', 'seq')) %>%
-  select(id, Bit, klucz) %>%
+  mutate(klucz = if_else(grepl(x = Index, pattern = "time"), 'time', 'seq'),
+         ids = str_extract(Index, pattern = '^war1_\\d+|^war2g\\d+_|^war2rm\\d+_'),
+         ids = if_else(grepl(x = ids, pattern = 'war1'),
+                       str_extract(string = ids, pattern = '(\\d+)(?!.*\\d)'),
+                       str_extract(string = ids, pattern = '([rmg]+\\d+)(?!.*\\d)')),
+         ids = case_when(ids == 'rm1' ~ '1',
+                         ids == 'g1' ~ '2',
+                         ids == 'rm2' ~ '3',
+                         ids == 'g2' ~ '4',
+                         ids == 'rm3' ~ '5',
+                         ids == 'g3' ~ '6',
+                         ids == 'rm4' ~ '7',
+                         ids == 'g4' ~ '8',
+                         ids == 'rm5' ~ '9',
+                         ids == 'g5' ~ '10',
+                         TRUE ~ ids)) %>%
+  select(id, ids, Bit, klucz) %>%
   group_by(id, klucz) %>%
   mutate(idx = 1:n()) %>%
   spread(klucz, Bit) %>%
   filter(!is.na(seq)) %>%
-  select(id, seq) %>%
-  group_by(id) %>%
+  select(id, ids, seq) %>%
+  group_by(id, ids) %>%
   summarise(seq = list(seq)) %>%
-  filter(lengths(seq)>99)
+  filter(lengths(seq)>8)
 ```
 
 #### 2.2.1. Procedure and Design
