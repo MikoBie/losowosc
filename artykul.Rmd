@@ -30,6 +30,7 @@ library(acss)
 library(haven)
 library(nlme)
 library(sjPlot)
+library(semPlot)
 library(kableExtra)
 library(lavaan)
 ## Ustaw temat ggplot()
@@ -348,7 +349,7 @@ model8.5 <- update(model8.4,random = ~1|id)
 # plot(model8.5)
 # #qqnorm(model2,~ranef(., level = 1))
 # qqnorm(model8.5, abline = c(0,1))
-# plot(model8.5, resid(., type = 'normalized') ~ fitted(.))
+# plot(model8.5, resid(., type = 'normalized') ~ fitted(.), type('p', 'smooth'))
 # plot(model8.5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
 # boxplot(resid(model8.5, type = 'normalized') ~ seq8$Condition)
 # boxplot(resid(model8.5, type = 'normalized') ~ seq8$Faculty)
@@ -651,7 +652,102 @@ data2 <- read_sav("dane/Zbiór_Biesaga_los_ostateczny_v1.sav") %>%
             ~str_extract(string = .x, pattern = '\\d+$') %>%
               str_c('pp', .)) %>%
   mutate_at(vars(matches("pp\\d+")), ~as.numeric(.)) %>%
-  mutate_at(vars(matches("pzp\\d+")), ~as.numeric(.)) %>%
+  mutate_at(vars(matches("pzp\\d+")), ~as.numeric(.))
+```
+
+```{r cfa}
+# nfc_model <- 'preferowanie_porzadku =~ pzp1 + pzp6 + pzp17 + pzp19 + pzp26 + pzp27 + pzp28
+#          preferowanie_przewidywalnosci =~ pzp5 + pzp7 + pzp9 + pzp15 + pzp16 + pzp21 + pzp22 + pzp32
+#          nietolerowanie_wieloznacznosci =~ pzp3 + pzp8 + pzp12 + pzp24 + pzp25 + pzp29
+#          zamknietosc_umyslowa =~ pzp2 + pzp4 + pzp20 + pzp23 + pzp30 + pzp31
+#          zdecydowanie =~pzp10 + pzp11 + pzp13 + pzp14 + pzp18
+# 
+#          preferowanie_porzadku ~~ 1*preferowanie_porzadku
+#          preferowanie_przewidywalnosci ~~ 1*preferowanie_przewidywalnosci
+#          nietolerowanie_wieloznacznosci ~~ 1*nietolerowanie_wieloznacznosci
+#          zamknietosc_umyslowa ~~ 1*zamknietosc_umyslowa
+#          zdecydowanie ~~ 1*zdecydowanie
+# 
+#          pzp1 ~~ pzp1
+#          pzp2 ~~ pzp2
+#          pzp3 ~~ pzp3
+#          pzp4 ~~ pzp4
+#          pzp5 ~~ pzp5
+#          pzp6 ~~ pzp6
+#          pzp7 ~~ pzp7
+#          pzp8 ~~ pzp8
+#          pzp9 ~~ pzp9
+#          pzp10 ~~ pzp10
+#          pzp11 ~~ pzp11
+#          pzp12 ~~ pzp12
+#          pzp13 ~~ pzp13
+#          pzp14 ~~ pzp14
+#          pzp15 ~~ pzp15
+#          pzp16 ~~ pzp16
+#          pzp17 ~~ pzp17
+#          pzp18 ~~ pzp18
+#          pzp19 ~~ pzp19
+#          pzp20 ~~ pzp20
+#          pzp21 ~~ pzp21
+#          pzp22 ~~ pzp22
+#          pzp23 ~~ pzp23
+#          pzp24 ~~ pzp24
+#          pzp25 ~~ pzp25
+#          pzp26 ~~ pzp26
+#          pzp27 ~~ pzp27
+#          pzp28 ~~ pzp28
+#          pzp29 ~~ pzp29
+#          pzp30 ~~ pzp30
+#          pzp31 ~~ pzp31
+#          pzp32 ~~ pzp32
+#          
+#          pzp1 ~ 1
+#          pzp2 ~ 1
+#          pzp3 ~ 1
+#          pzp4 ~ 1
+#          pzp5 ~ 1
+#          pzp6 ~ 1
+#          pzp7 ~ 1
+#          pzp8 ~ 1
+#          pzp9 ~ 1
+#          pzp10 ~ 1
+#          pzp11 ~ 1
+#          pzp12 ~ 1
+#          pzp13 ~ 1
+#          pzp14 ~ 1
+#          pzp15 ~ 1
+#          pzp16 ~ 1
+#          pzp17 ~ 1
+#          pzp18 ~ 1
+#          pzp19 ~ 1
+#          pzp20 ~ 1
+#          pzp21 ~ 1
+#          pzp22 ~ 1
+#          pzp23 ~ 1
+#          pzp24 ~ 1
+#          pzp25 ~ 1
+#          pzp26 ~ 1
+#          pzp27 ~ 1
+#          pzp28 ~ 1
+#          pzp29 ~ 1
+#          pzp30 ~ 1
+#          pzp31 ~ 1
+#          pzp32 ~ 1
+#          '
+# nfc_fit <- cfa(nfc_model,
+#                std.lv = TRUE,
+#                missing = 'fiml',
+#                data = data2)
+# summary(nfc_fit, fit.measures=TRUE, standardized = TRUE)
+# semPaths(nfc_fit, what="std", 
+#          sizeLat = 7, sizeMan = 7, edge.label.cex = .75)
+# parameterEstimates(nfc_fit, standardized = TRUE)
+# resid(nfc_fit, type = "cor")$cov
+# modificationIndices(nfc_fit, sort.=TRUE, minimum.value=3)
+```
+
+```{r}
+data2 <- data2 %>%
   mutate_at(vars(matches("pp[2, 3, 8, 10, 13, 15, 17, 19, 22, 26, 28, 33, 34, 35]")), ~{6-.}) %>%
   mutate_at(vars(matches("pzp[2, 5, 10, 14, 15, 16, 17, 18, 20, 24, 30, 31]")), ~{7-.}) %>%
   mutate(year = as.numeric(year)) %>%
@@ -661,14 +757,21 @@ data2 <- read_sav("dane/Zbiór_Biesaga_los_ostateczny_v1.sav") %>%
          preferowanie_przewidywalnosci = sum(pzp5, pzp7, pzp9, pzp15, pzp16, pzp21, pzp22, pzp32),
          nietolerowanie_wieloznacznosci = sum(pzp3, pzp8, pzp12, pzp24, pzp25, pzp29),
          zamknietosc_umyslowa = sum(pzp2, pzp4, pzp20, pzp23, pzp30, pzp31),
-         zdecydowniae = sum(pzp10, pzp11, pzp13, pzp14, pzp18),
+         zdecydowanie = sum(pzp10, pzp11, pzp13, pzp14, pzp18),
+         preferowanie_porzadku2 = sum(pzp6, pzp26, pzp27),
+         preferowanie_przewidywalnosci2 = sum(pzp9, pzp21, pzp32),
+         nietolerowanie_wieloznacznosci2 = sum(pzp3, pzp8, pzp29),
+         zamknietosc_umyslowa2 = sum(pzp2, pzp20, pzp31),
+         zdecydowanie2 = sum(pzp13, pzp14, pzp18),
          potrzeba_poznania = sum(pp1, pp2, pp3, pp4, pp5, pp6, pp7, pp8, pp9, pp10,
                                  pp11, pp12, pp13, pp14, pp15, pp16, pp17, pp18, pp19, pp20,
                                  pp21, pp22, pp23, pp24, pp25, pp26, pp27, pp28, pp29, pp30,
-                                 pp31, pp32, pp33, pp34, pp35, pp36)) %>%
+                                 pp31, pp32, pp33, pp34, pp35, pp36),
+         warunek = as.character(warunek),
+         warunek = if_else(warunek == "1", "homogeneous", "heterogeneous")) %>%
   select(-matches('pp\\d+|pzp\\d+'))
 
-data2_long <- data2 %>%
+data2_time <- data2 %>%
   gather(key = "Index", value = "Bit", matches("war[[:digit:]]")) %>%
   filter(!is.na(Bit)) %>% 
   filter(Bit != 99) %>% 
@@ -690,10 +793,12 @@ data2_long <- data2 %>%
                          TRUE ~ ids),
          ids = as.numeric(ids)) %>%
   select(id, ids, Bit, klucz) %>%
-  group_by(id, klucz) %>%
+  group_by(id, ids, klucz) %>%
   mutate(idx = 1:n()) %>%
   spread(klucz, Bit) %>%
-  filter(!is.na(seq)) %>%
+  filter(!is.na(seq))
+
+data2_long <- data2_time %>%
   select(id, ids, seq) %>%
   group_by(id, ids) %>%
   summarise(seq = list(seq)) %>%
@@ -746,7 +851,7 @@ seq9 = pd.DataFrame({'id': r.data2_long.id.astype(int),
                      'ids': r.data2_long.ids.astype(int),
                      'cmx': data.seq.apply(bdm.nbdm),
                      'cmx_w': data.seq.apply(lambda x: window_bdm(x, bdm, k = 9))})
-                     
+
 bdm = BDM(ndim=1, min_length=6)
 seq6 = pd.DataFrame({'id': r.data2_long.id.astype(int),
                      'ids': r.data2_long.ids.astype(int),
@@ -771,21 +876,6 @@ seq8 = pd.DataFrame({'id': r.data2_long.id.astype(int),
 # seq15 = seq15.loc[seq15.cmx >= seq15.cmx.quantile(.05), :]
 ```
 
-```{r cfa}
-# nfc_model <- 'preferowanie_porzadku =~ pzp1 + pzp6 + pzp17 + pzp19 + pzp26 + pzp27 + pzp28
-#          preferowanie_przewidywalnosci =~ pzp5 + pzp7 + pzp9 + pzp15 + pzp16 + pzp21 + pzp22 + pzp32
-#          nietolerowanie_wieloznacznosci =~ pzp3 + pzp8 + pzp12 + pzp24 + pzp25 + pzp29
-#          zamknietosc_umyslowa =~ pzp2 + pzp4 + pzp20 + pzp23 + pzp30 + pzp31
-#          zdecydowniae =~pzp10 + pzp11 + pzp13 + pzp14 + pzp18'
-# nfc_fit <- cfa(nfc_model,
-#                std.lv = TRUE,
-#                missing = 'fiml',
-#                data = data2)
-# summary(nfc_fit, fit.measures=TRUE, standardized = TRUE)
-# parameterEstimates(nfc_fit, standardized = TRUE)
-# resid(nfc_fit, type = "cor")$cov
-# modificationIndices(nfc_fit, sort.=TRUE, minimum.value=3)
-```
 
 ```{r}
 seq5 <- py$seq5
@@ -798,21 +888,32 @@ data2 <- data2_long %>%
   select(id, ids) %>%
   left_join(data2) %>%
   left_join(seq7 %>% select(id, ids,cmx)) %>%
-  select(-matches('war\\d.'))
+  select(-matches('war\\d.')) %>%
+  left_join(data2_time %>% select(id, ids, idx, time) %>% group_by(id,ids) %>% summarise(time = sum(time)))
   
 seq5 <- seq5 %>%
     unnest() %>%
     group_by(id,ids) %>%
     mutate(idx = 1:n()) %>%
     ungroup %>%
-    left_join(select(data2, -cmx))
+    left_join(select(data2, -cmx)) %>%
+    left_join(data2_time %>%
+               select(id, idx, ids, idx_time = time) %>%
+               mutate(time_roll = rollsum(idx_time, k =5, align = "left", fill = NA)) %>%
+               filter(!is.na(time_roll)) %>%
+                select(id, idx, ids, time_roll))
 
 seq6 <- seq6 %>%
     unnest() %>%
     group_by(id,ids) %>%
     mutate(idx = 1:n()) %>%
     ungroup %>%
-    left_join(select(data2, -cmx))
+    left_join(select(data2, -cmx)) %>%
+  left_join(data2_time %>%
+               select(id, idx, ids, idx_time = time) %>%
+               mutate(time_roll = rollsum(idx_time, k =6, align = "left", fill = NA)) %>%
+               filter(!is.na(time_roll)) %>%
+               select(id, idx, ids, time_roll))
 
 
 seq7 <- seq7 %>%
@@ -820,32 +921,57 @@ seq7 <- seq7 %>%
     group_by(id,ids) %>%
     mutate(idx = 1:n()) %>%
     ungroup %>%
-    left_join(select(data2, -cmx))
+    left_join(select(data2, -cmx)) %>%
+  left_join(data2_time %>%
+               select(id, idx, ids, idx_time = time) %>%
+               mutate(time_roll = rollsum(idx_time, k = 7, align = "left", fill = NA)) %>%
+               filter(!is.na(time_roll)) %>%
+               select(id, idx, ids, time_roll))
 
 seq8 <- seq8 %>%
     unnest() %>%
     group_by(id,ids) %>%
     mutate(idx = 1:n()) %>%
     ungroup %>%
-    left_join(select(data2, -cmx))
+    left_join(select(data2, -cmx)) %>%
+  left_join(data2_time %>%
+               select(id, idx, ids, idx_time = time) %>%
+               mutate(time_roll = rollsum(idx_time, k =8, align = "left", fill = NA)) %>%
+               filter(!is.na(time_roll)) %>%
+               select(id, idx, ids, time_roll))
 
 seq9 <- seq9 %>%
     unnest() %>%
     group_by(id,ids) %>%
     mutate(idx = 1:n()) %>%
     ungroup %>%
-    left_join(select(data2, -cmx))
+    left_join(select(data2, -cmx)) %>%
+  left_join(data2_time %>%
+               select(id, idx, ids, idx_time = time) %>%
+               mutate(time_roll = rollsum(idx_time, k =9, align = "left", fill = NA)) %>%
+               filter(!is.na(time_roll)) %>%
+               select(id, idx, ids, time_roll))
 
 ```
 #### 2.2.4 Results
-First, similarly to the results of study 1 we focused on the overall value of complexity for each participant. We tested hypothesis regarding the difference between the experimental conditions and the relationships between algorithmic complexity, need for cognition and need for closure.
+First, we computed algorithmic complexity for each series produced by participants. Afterward, we used the linear mixed-effects model to test following hypothesis: 1) the algorithmic complexity decreases over time, 2) the instruction condition moderates the effect of time on the algorithmic complexity, 3) the need for cognition increases the algorithmic complexity, 4) the order subscale of need for closure decreases the algorithmic complexity, 5) the predictability subscale of the need for cognition scale decrease the algorithmic complexity, 6) ambiguity subscale of the need for closure scale increases the algorithmic complexity, 7) closed-mindness subscale of the need for closure scale decreases the algorithmic complexity. The dependent variable (the algorithmic complexity) in the model was logged so back-transformed model predictions were bounded to be non-negative since there is no notion of negative randomness / algorithmic complexity. As fixed effects we entered the instruction condition (with the homogeneous condition as the reference level in dummy coding), the series number (we enetered also a quadratic term for the series number because it increased the model fit), the interaction term between series number and the instruction condition, the order subscale, the ambiguity subscale, the closed-mindness subscale, the predictibility subscale, and the the need for cogniiotn. Goodness-of-fit of the model was assessed with marginal $R^2$ (variance retained by fixed effects only) and conditional $R^2$ (variance retained by the model as such). As random effects, we had an intercept for subjects and random effect of slope for the series number.
+
+The fitted model indicated several significant effects. There was a significant negative effect of the series number on the algorithmic complexity, $t(1609)=4.396,\ p<.001$. With each series, the algorithmic complexity decreased by $.045\ \pm.01$ points. However, since the quadratic term was also present, $t(1609)=3.826,\ p<.001$, the linear decile of the algorithmic complexity was reduced by $.003\ \pm.0009$ point with each series. This result supported the first hypothesis regarding the observed decline in the algorithmic complexity over time (compare Figure 3.). However, the decline of the algorithmic complexity with each series was smaller. Although it seems that the algorithmic complexity at some point even increased. This change in the trend requires further examination. However, hypothesis two was not supported. The instruction manipulation did not affect neither the change of the algorithmic complexity over series nor the algorithmic complexity itlesf. 
+
+The mean algorithmic complexity over the series was correlated with . Neither the task definition nor the level of mathematical experience moderated the effect of timestep on the algorithmic complexity (the detailed results are presented in Table 1.). However, similarly to the overall algorithmic complexity, there were significant differences between task definition conditions.  The algorithmic complexity in the Coin Tossing Condition was $2.814\%\ \pm.954$ higher than in the No Instruction Condition, $t(169)=2.948,\ p=.004$. Similarly, in the Stock Market condition, the algorithmic complexity was higher $2.82\%\ \pm.962$ than in the No Instruction Condition, $t=2.931,\ p=.004$. 
 
 
 ```{r model_all}
-model <- lme((cmx) ~ 1 + (ids)*warunek + (survey_finish_time),
+model <- lme((cmx) ~ 1 + (ids)*warunek +
+               preferowanie_porzadku2 +
+               preferowanie_przewidywalnosci2 +
+               nietolerowanie_wieloznacznosci2 +
+               zamknietosc_umyslowa2 +
+               potrzeba_poznania +
+               survey_finish_time,
              random = ~ids|id,
              data = data2,
-             correlation = corCAR1(form = ~ids|id))
+             correlation = corCAR1(form = ~ids|id), method = "ML")
 
 model2 <- update(model, random = ~ids-1|id )
 anova(model,model2)
@@ -858,182 +984,334 @@ plot(model)
 #qqnorm(model2,~ranef(., level = 1))
 qqnorm(model, abline = c(0,1))
 plot(model, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-plot(model,resid(.,type="pearson") ~ log(ids),type=c("p","smooth"))
+plot(model,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
 plot(model,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
+plot(model,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
+plot(model,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
+plot(model,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
+plot(model,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
+plot(model,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
+boxplot(resid(model, type = 'normalized') ~ data2$warunek)
+
+model_quadratic <- lme((cmx) ~ 1 +ids*warunek + I(ids^2)*warunek +
+               preferowanie_porzadku2 +
+               preferowanie_przewidywalnosci2 +
+               nietolerowanie_wieloznacznosci2 +
+               zamknietosc_umyslowa2 +
+               potrzeba_poznania,
+             random = ~ids|id,
+             data = data2,
+             correlation = corCAR1(form = ~ids|id),
+             method = "ML")
+
+anova(model_quadratic, model)
+summary(model_quadratic)
+
+model2 <- update(model_quadratic, random = ~ids-1|id )
+anova(model_quadratic,model2)
+model3 <- update(model_quadratic, random = ~1|id)
+anova(model_quadratic,model3)
+
+## Error Diagnostics
+par(mfrow = c(1,2))
+plot(model_pol)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model_pol, abline = c(0,1))
+plot(model_quadratic, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model_quadratic,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model_quadratic,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
+plot(model_quadratic,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
+plot(model_quadratic,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
+plot(model_quadratic,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
+plot(model_quadratic,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
+plot(model_quadratic,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
 #plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
 boxplot(resid(model, type = 'normalized') ~ data2$warunek)
 
 ## Autocorrealtion Diagnostics
-acf(resid(model, type = 'normalized'))
+acf(resid(model_pol, type = 'normalized'))
 pacf(resid(model, type = 'normalized'))
-acf(resid(model))
-pacf(resid(model))
 
 ## Summary
-r.squaredGLMM(model)
-summary(model)
+r.squaredGLMM(model_pol)
+summary(model_quadratic)
 ```
+
+```{r table2}
+Predictors_names <- rownames(coef(summary(model_pol)))
+coef(summary(model_pol)) %>% 
+  as.tibble() %>% 
+  mutate(Predictors = Predictors_names) %>%
+  select(Predictors,
+         "Estimates" = 1,
+         "Std. Error" = 2,
+         "df*"=DF,
+         "t-value",
+         "p-value") %>%
+  kable(caption = "Table 2. Model specification") %>%
+  footnote(general = 'Marginal R2 = 7.18%, Conditional R2=42.62% \nStd. Deviation of the random individual effects s=.015, p<.001 \n\\*Deegres of Freedom were adjusted with the Satterthwaiter Method \nThe model accounted for first-order autoregressive errors corelation structure')
+```
+
+```{r figure 3}
+data2 %>%
+  ungroup() %>%
+  mutate(predict = predict(model_quadratic),
+         ymin = predict - 1.96*predict(model_quadratic, se.fit = TRUE, level = 0)$se.fit,
+         ymax = predict + 1.96*predict(model_quadratic, se.fit = TRUE, level = 0)$se.fit) %>%
+  group_by(ids) %>%
+  summarise(predict = mean(predict),
+            ymin = mean(ymin),
+            ymax = mean(ymax)) %>%
+  ggplot(aes(x = ids, y = predict)) +
+  geom_smooth(aes(ymin = ymin, ymax=ymax), stat = 'identity', inherit.aes = TRUE, color = 'black', size = .5) +
+  geom_jitter(data = data2 %>% ungroup, aes(x = ids, y = cmx), alpha = .2, color = 'grey') +
+  labs(title = "Figure 3. Change in the algorithmic complexity over the series number",
+       x = "Series number",
+       y = "Algorithmic Complexity")
+```
+
  
 ```{r model5}
+seq5 <- seq5 %>%
+  filter(idx == 1)
+
 ## Model selection
-model5 <- lme(log(cmx_w) ~ 1 +idx*ids*warunek + survey_finish_time,
-             random = ~idx|ids|id,
-             data = seq5)
-model5.4 <- update(model5,correlation = corCAR1(form = ~1|id))
-anova(model5, model5.4)
-model5.5 <- update(model5.4,random = ~1|id)
-anova(model5.5, model5.4)
+model5 <- lme(log(cmx_w) ~ 1 + (ids)*warunek +
+               preferowanie_porzadku2 +
+               preferowanie_przewidywalnosci2 +
+               nietolerowanie_wieloznacznosci2 +
+               zamknietosc_umyslowa2 +
+               potrzeba_poznania +
+               time_roll,
+             random = ~ids|id,
+             data = seq5,
+             correlation = corCAR1(form = ~ids|id))
+
+model5.5 <- update(model5,random = ~1|id)
+anova(model5, model5.5)
 model5.6 <- update(model5.5, random = ~idx-1|id )
-anova(model5.6,model5.4)
+anova(model5.6,model5)
 #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
 #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
 #anova(model3, model4, model5, model6, model7)
 
-## Errors diagnostics
+## Error Diagnostics
 par(mfrow = c(1,2))
-plot(model5.4)
+plot(model5)
 #qqnorm(model2,~ranef(., level = 1))
 qqnorm(model5.4, abline = c(0,1))
-plot(model5.4, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-plot(model5.4,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-boxplot(resid(model5.4, type = 'normalized') ~ seq5$warunek)
+plot(model5, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model5,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model5,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
+plot(model5,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
+plot(model5,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
+plot(model5,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
+plot(model5,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
+plot(model5,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
+boxplot(resid(model5, type = 'normalized') ~ seq5$warunek)
 
-## Autocorrelation Diagnostics
-acf(resid(model5.4, type = 'normalized'))
-pacf(resid(model5.4, type = 'normalized'))
-acf(resid(model5.4))
-pacf(resid(model5.4))
+## Autocorrealtion Diagnostics
+acf(resid(model5, type = 'normalized'))
+pacf(resid(model5, type = 'normalized'))
 
 ## Summary
-r.squaredGLMM(model5.4)
-summary(model5.4)
+r.squaredGLMM(model5)
+summary(model5)
 ``` 
 ```{r model6}
+seq6 <- seq6 %>%
+  filter(idx == 1)
+
 ## Model selection
-model6 <- lme(log(cmx_w) ~ 1 +idx*ids*warunek + survey_finish_time,
-             random = ~idx|ids|id,
-             data = seq6)
-model6.4 <- update(model6,correlation = corCAR1(form = ~1|id))
-anova(model6, model6.4)
-model6.5 <- update(model5.4,random = ~1|id)
-anova(model5.5, model5.4)
-model6.6 <- update(model5.5, random = ~idx-1|id )
-anova(model5.6,model5.4)
+model6 <- lme(log(cmx_w) ~ 1 + (ids)*warunek +
+               preferowanie_porzadku2 +
+               preferowanie_przewidywalnosci2 +
+               nietolerowanie_wieloznacznosci2 +
+               zamknietosc_umyslowa2 +
+               potrzeba_poznania +
+               time_roll,
+             random = ~ids|id,
+             data = seq6,
+             correlation = corCAR1(form = ~ids|id))
+
+model6.5 <- update(model5,random = ~1|id)
+anova(model6, model6.5)
+model6.6 <- update(model6.5, random = ~idx-1|id )
+anova(model6.6,model6)
 #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
 #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
 #anova(model3, model4, model5, model6, model7)
 
-## Errors diagnostics
+## Error Diagnostics
 par(mfrow = c(1,2))
-plot(model6.4)
+plot(model6)
 #qqnorm(model2,~ranef(., level = 1))
-qqnorm(model6.4, abline = c(0,1))
-plot(model6.4, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-plot(model6.4,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
+qqnorm(model6, abline = c(0,1))
+plot(model6, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model6,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model6,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
+plot(model6,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
+plot(model6,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
+plot(model6,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
+plot(model6,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
+plot(model6,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
 boxplot(resid(model6, type = 'normalized') ~ seq6$warunek)
 
-## Autocorrelation Diagnostics
-acf(resid(model6.4, type = 'normalized'))
-pacf(resid(model6.4, type = 'normalized'))
-
+## Autocorrealtion Diagnostics
+acf(resid(model6, type = 'normalized'))
+pacf(resid(model6, type = 'normalized'))
 
 ## Summary
-r.squaredGLMM(model6.4)
-summary(model6.4)
+r.squaredGLMM(model6)
+summary(model6)
 ``` 
 ```{r model7}
+seq7 <- seq7 %>%
+  filter(idx == 1)
+
 ## Model selection
-model7 <- lme(log(cmx_w) ~ 1 +idx*ids*warunek + survey_finish_time,
-             random = ~idx|ids|id,
-             data = seq7)
-model7.4 <- update(model7,correlation = corCAR1(form = ~1|id))
-anova(model7, model7.4)
-model6.5 <- update(model5.4,random = ~1|id)
-anova(model5.5, model5.4)
-model6.6 <- update(model5.5, random = ~idx-1|id )
-anova(model5.6,model5.4)
+model7 <- lme(log(cmx_w) ~ 1 + (ids)*warunek +
+               preferowanie_porzadku2 +
+               preferowanie_przewidywalnosci2 +
+               nietolerowanie_wieloznacznosci2 +
+               zamknietosc_umyslowa2 +
+               potrzeba_poznania +
+               time_roll,
+             random = ~ids|id,
+             data = seq7,
+             correlation = corCAR1(form = ~ids|id))
+
+model7.5 <- update(model7,random = ~1|id)
+anova(model7, model7.5)
+model7.6 <- update(model7.5, random = ~idx-1|id )
+anova(model7.6,model7)
 #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
 #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
 #anova(model3, model4, model5, model6, model7)
 
-## Errors diagnostics
+## Error Diagnostics
 par(mfrow = c(1,2))
-plot(model7.4)
+plot(model7)
 #qqnorm(model2,~ranef(., level = 1))
-qqnorm(model7.4, abline = c(0,1))
-plot(model7.4, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-plot(model7.4,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-boxplot(resid(model7.4, type = 'normalized') ~ seq7$warunek)
+qqnorm(model7, abline = c(0,1))
+plot(model7, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model7,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model7,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
+plot(model7,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
+plot(model7,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
+plot(model7,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
+plot(model7,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
+plot(model7,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
+boxplot(resid(model7, type = 'normalized') ~ seq7$warunek)
 
-## Autocorrelation Diagnostics
-acf(resid(model7.4, type = 'normalized'))
-pacf(resid(model7.4, type = 'normalized'))
-
+## Autocorrealtion Diagnostics
+acf(resid(model7, type = 'normalized'))
+pacf(resid(model7, type = 'normalized'))
 
 ## Summary
-r.squaredGLMM(model7.4)
-summary(model7.4)
+r.squaredGLMM(model7)
+summary(model7)
 ``` 
  
 ```{r model8}
-## Model selection
-model8 <- lme(log(cmx_w) ~ 1 +idx*ids*warunek + survey_finish_time,
-             random = ~idx|ids|id,
-             data = seq8)
-model8.4 <- update(model8,correlation = corCAR1(form = ~1|id))
-anova(model8, model8.4)
+seq8 <- seq8 %>%
+  filter(idx == 1)
 
+## Model selection
+model8 <- lme(log(cmx_w) ~ 1 + (ids)*warunek +
+               preferowanie_porzadku2 +
+               preferowanie_przewidywalnosci2 +
+               nietolerowanie_wieloznacznosci2 +
+               zamknietosc_umyslowa2 +
+               potrzeba_poznania +
+               time_roll,
+             random = ~ids|id,
+             data = seq8,
+             correlation = corCAR1(form = ~ids|id))
+
+model8.5 <- update(model8,random = ~1|id)
+anova(model8, model8.5)
+model8.6 <- update(model8.5, random = ~idx-1|id )
+anova(model8.6,model8)
 #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
 #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
 #anova(model3, model4, model5, model6, model7)
 
-## Errors diagnostics
+## Error Diagnostics
 par(mfrow = c(1,2))
-plot(model8.4)
+plot(model8)
 #qqnorm(model2,~ranef(., level = 1))
-qqnorm(model8.4, abline = c(0,1))
-plot(model8.4, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-plot(model8.4,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-boxplot(resid(model8.4, type = 'normalized') ~ seq8$warunek)
+qqnorm(model8, abline = c(0,1))
+plot(model8, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model8,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model8,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
+plot(model8,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
+plot(model8,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
+plot(model8,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
+plot(model8,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
+plot(model8,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
+boxplot(resid(model8, type = 'normalized') ~ seq8$warunek)
 
-## Autocorrelation Diagnostics
-acf(resid(model8.4, type = 'normalized'))
-pacf(resid(model8.4, type = 'normalized'))
-
+## Autocorrealtion Diagnostics
+acf(resid(model8, type = 'normalized'))
+pacf(resid(model8, type = 'normalized'))
 
 ## Summary
-r.squaredGLMM(model8.4)
-summary(model8.4)
+r.squaredGLMM(model8)
+summary(model8)
 ``` 
 ```{r model9}
-## Model selection
-model9 <- lme(log(cmx_w) ~ 1 +idx*ids*warunek + survey_finish_time,
-             random = ~idx|ids|id,
-             data = seq9)
-model9.4 <- update(model9,correlation = corCAR1(form = ~1|id))
-anova(model9, model9.4)
+seq9 <- seq9 %>%
+  filter(idx == 1)
 
+## Model selection
+model9 <- lme(log(cmx_w) ~ 1 + (ids)*warunek +
+               preferowanie_porzadku2 +
+               preferowanie_przewidywalnosci2 +
+               nietolerowanie_wieloznacznosci2 +
+               zamknietosc_umyslowa2 +
+               potrzeba_poznania +
+               time_roll,
+             random = ~ids|id,
+             data = seq9,
+             correlation = corCAR1(form = ~ids|id))
+
+model9.5 <- update(model9,random = ~1|id)
+anova(model9, model9.5)
+model9.6 <- update(model9.5, random = ~idx-1|id )
+anova(model9.6,model9)
 #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
 #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
 #anova(model3, model4, model5, model6, model7)
 
-## Errors diagnostics
+## Error Diagnostics
 par(mfrow = c(1,2))
-plot(model9.4)
+plot(model9)
 #qqnorm(model2,~ranef(., level = 1))
-qqnorm(model9.4, abline = c(0,1))
-plot(model9.4, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-plot(model9.4,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-boxplot(resid(model9.4, type = 'normalized') ~ seq9$warunek)
+qqnorm(model9, abline = c(0,1))
+plot(model9, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model9,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model9,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
+plot(model9,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
+plot(model9,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
+plot(model9,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
+plot(model9,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
+plot(model9,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
+boxplot(resid(model9, type = 'normalized') ~ seq9$warunek)
 
-## Autocorrelation Diagnostics
-acf(resid(model9.4, type = 'normalized'))
-pacf(resid(model9.4, type = 'normalized'))
-
+## Autocorrealtion Diagnostics
+acf(resid(model9, type = 'normalized'))
+pacf(resid(model9, type = 'normalized'))
 
 ## Summary
-r.squaredGLMM(model9.4)
-summary(model9.4)
+r.squaredGLMM(model9)
+summary(model9)
 ``` 
  2, 3, 8, 10, 13, 15, 17, 19, 22, 26, 28, 33, 34, 35
  
