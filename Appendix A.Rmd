@@ -1,7 +1,7 @@
 ---
-title: "Motivational and situational determinants ability to produce random series"
+title: "Appendix A"
 description: |
-    Method section.
+    Appendix A.
 author:
   - name: Mikołaj Biesaga and Szymon Talaga
     affiliation: The Robert Zajonc Institute for Social Studies
@@ -1074,8 +1074,8 @@ summary(model_quadratic)
 ```
 
 ```{r table2}
-Predictors_names <- rownames(coef(summary(model_pol)))
-coef(summary(model_pol)) %>% 
+Predictors_names <- rownames(coef(summary(model_quadratic)))
+coef(summary(model_quadratic)) %>% 
   as.tibble() %>% 
   mutate(Predictors = Predictors_names) %>%
   select(Predictors,
@@ -1096,6 +1096,7 @@ data2 %>%
          ymax = predict + 1.96*predict(model_quadratic, se.fit = TRUE, level = 0)$se.fit) %>%
   group_by(ids) %>%
   summarise(predict = mean(predict),
+            cmx = mean(cmx),
             ymin = mean(ymin),
             ymax = mean(ymax)) %>%
   mutate(ids = (ids)) %>%
@@ -1109,230 +1110,175 @@ data2 %>%
 ```
 
  
-```{r model5}
-# ## Model selection
-# model5 <- lme(log(cmx_w) ~ 1 + (ids)*warunek +
-#                preferowanie_porzadku2 +
-#                preferowanie_przewidywalnosci2 +
-#                nietolerowanie_wieloznacznosci2 +
-#                zamknietosc_umyslowa2 +
-#                potrzeba_poznania +
-#                time_roll,
-#              random = ~ids|id,
-#              weights = varIdent(~warunek),
-#              data = seq5 %>% filter(idx == 1),
-#              correlation = corCAR1(form = ~ids|id))
-# model5.5 <- update(model5,random = ~1|id)
-# anova(model5, model5.5)
-# model5.6 <- update(model5.5, random = ~idx-1|id )
-# anova(model5.6,model5)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Error Diagnostics
-# plot(model5)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model5, abline = c(0,1))
-# plot(model5, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-# plot(model5,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
-# plot(model5,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
-# plot(model5,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
-# plot(model5,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
-# plot(model5,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
-# plot(model5,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
-# plot(model5,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
-# plot(model5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-# #plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
-# boxplot(resid(model5, type = 'normalized') ~ seq5 %>% filter(idx == 1) %$% warunek)
-# 
-# ## Autocorrealtion Diagnostics
-# acf(resid(model5, type = 'normalized'))
-# pacf(resid(model5, type = 'normalized'))
-# 
-# ## Summary
-# r.squaredGLMM(model5)
-# summary(model5)
+```{r model52}
+## Model selection
+model5 <- lme(log(cmx_w) ~ 1 + idx*ids*warunek +
+               log(time_roll),
+             random = ~1|idx + idx|ids + ids|id,
+             weights = varIdent(~warunek),
+             data = seq5,
+             correlation = corCAR1(form = ~1|id))
+model5.5 <- update(model5,random = ~1|id)
+anova(model5, model5.5)
+model5.6 <- update(model5.5, random = ~idx-1|id )
+anova(model5.6,model5)
+
+## Error Diagnostics
+plot(model5.5)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model5.5, abline = c(0,1))
+plot(model5.5, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model5.5,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model5.5,resid(.,type="pearson") ~ log(time_roll),type=c("p","smooth"))
+boxplot(resid(model5.5, type = 'normalized') ~ seq5$warunek)
+
+## Autocorrealtion Diagnostics
+acf(resid(model5, type = 'normalized'))
+pacf(resid(model5, type = 'normalized'))
+
+## Summary
+r.squaredGLMM(model5)
+summary(model5)
 ``` 
-```{r model6}
-# ## Model selection
-# model6 <- lme(log(cmx_w) ~ 1 + idx*(ids)*warunek +
-#                preferowanie_porzadku2 +
-#                preferowanie_przewidywalnosci2 +
-#                nietolerowanie_wieloznacznosci2 +
-#                zamknietosc_umyslowa2 +
-#                potrzeba_poznania +
-#                time_roll,
-#              random = ~1|idx+idx|ids+ids|id,
-#              weights = varIdent(~warunek),
-#              data = seq6,
-#              correlation = corCAR1(form = ~1|id))
-# 
-# model6.5 <- update(model5,random = ~1|id)
-# anova(model6, model6.5)
-# model6.6 <- update(model6.5, random = ~idx-1|id )
-# anova(model6.6,model6)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Error Diagnostics
-# par(mfrow = c(1,2))
-# plot(model6)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model6, abline = c(0,1))
-# plot(model6, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-# plot(model6,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
-# plot(model6,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
-# plot(model6,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
-# plot(model6,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
-# plot(model6,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
-# plot(model6,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
-# plot(model6,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
-# #plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
-# boxplot(resid(model6, type = 'normalized') ~ seq6$warunek)
-# 
-# ## Autocorrealtion Diagnostics
-# acf(resid(model6, type = 'normalized'))
-# pacf(resid(model6, type = 'normalized'))
-# 
-# ## Summary
-# r.squaredGLMM(model6)
-# summary(model6)
+```{r model62}
+## Model selection
+model6 <- lme(log(cmx_w) ~ 1 + idx*(ids)*warunek +
+               log(time_roll),
+             random = ~1|idx+idx|ids+ids|id,
+             weights = varIdent(~warunek),
+             data = seq6,
+             correlation = corCAR1(form = ~1|id))
+
+model6.5 <- update(model6,random = ~1|id)
+anova(model6, model6.5)
+model6.6 <- update(model6, random = ~idx-1|id )
+anova(model6.6,model6)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+
+## Error Diagnostics
+plot(model6.5)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model6.5, abline = c(0,1))
+plot(model6.5, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model6.5,resid(.,type="pearson") ~ log(time_roll),type=c("p","smooth"))
+plot(model6.5,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model6.5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
+boxplot(resid(model6.5, type = 'normalized') ~ seq6$warunek)
+
+## Autocorrealtion Diagnostics
+acf(resid(model6.5, type = 'normalized'))
+pacf(resid(model6.5, type = 'normalized'))
+
+## Summary
+r.squaredGLMM(model6.5)
+summary(model6.5)
 ``` 
-```{r model7}
-# ## Model selection
-# model7 <- lme(log(cmx_w) ~ 1 + (ids)*warunek +
-#                preferowanie_porzadku2 +
-#                preferowanie_przewidywalnosci2 +
-#                nietolerowanie_wieloznacznosci2 +
-#                zamknietosc_umyslowa2 +
-#                potrzeba_poznania +
-#                time_roll,
-#              random = ~1|idx + idx|ids+ids|id,
-#              data = seq7,
-#              correlation = corCAR1(form = ~1|id))
-# 
-# model7.5 <- update(model7,random = ~1|id)
-# anova(model7, model7.5)
-# model7.6 <- update(model7.5, random = ~idx-1|id )
-# anova(model7.6,model7)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Error Diagnostics
-# par(mfrow = c(1,2))
-# plot(model7)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model7, abline = c(0,1))
-# plot(model7, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-# plot(model7,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
-# plot(model7,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
-# plot(model7,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
-# plot(model7,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
-# plot(model7,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
-# plot(model7,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
-# plot(model7,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
-# #plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
-# boxplot(resid(model7, type = 'normalized') ~ seq7$warunek)
-# 
-# ## Autocorrealtion Diagnostics
-# acf(resid(model7, type = 'normalized'))
-# pacf(resid(model7, type = 'normalized'))
-# 
-# ## Summary
-# r.squaredGLMM(model7)
-# summary(model7)
+```{r model72}
+## Model selection
+model7 <- lme(log(cmx_w) ~ 1 + idx*(ids)*warunek +
+               log(time_roll),
+             random = ~1|idx + idx|ids+ids|id,
+             data = seq7,
+             correlation = corCAR1(form = ~1|id))
+
+model7.5 <- update(model7,random = ~1|id)
+anova(model7, model7.5)
+model7.6 <- update(model7.5, random = ~idx-1|id )
+anova(model7.6,model7)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+
+## Error Diagnostics
+plot(model7.5)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model7.5, abline = c(0,1))
+plot(model7.5, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model7.5,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model7.5,resid(.,type="pearson") ~ (idx),type=c("p","smooth"))
+plot(model7.5,resid(.,type="pearson") ~ log(time_roll),type=c("p","smooth"))
+boxplot(resid(model7.5, type = 'normalized') ~ seq7$warunek)
+
+## Autocorrealtion Diagnostics
+acf(resid(model7.5, type = 'normalized'))
+pacf(resid(model7.5, type = 'normalized'))
+
+## Summary
+r.squaredGLMM(model7.5)
+summary(model7.5)
 ``` 
  
-```{r model8}
-# ## Model selection
-# model8 <- lme(log(cmx_w) ~ 1 + idx*(ids)*warunek +
-#                preferowanie_porzadku2 +
-#                preferowanie_przewidywalnosci2 +
-#                nietolerowanie_wieloznacznosci2 +
-#                zamknietosc_umyslowa2 +
-#                potrzeba_poznania +
-#                time_roll,
-#              random = ~1|idx+idx|ids+ids|id,
-#              data = seq8,
-#              correlation = corCAR1(form = ~1|id))
-# 
-# model8.5 <- update(model8,random = ~1|id)
-# anova(model8, model8.5)
-# model8.6 <- update(model8.5, random = ~idx-1|id )
-# anova(model8.6,model8)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Error Diagnostics
-# par(mfrow = c(1,2))
-# plot(model8)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model8, abline = c(0,1))
-# plot(model8, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-# plot(model8,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
-# plot(model8,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
-# plot(model8,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
-# plot(model8,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
-# plot(model8,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
-# plot(model8,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
-# plot(model8,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
-# #plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
-# boxplot(resid(model8, type = 'normalized') ~ seq8$warunek)
-# 
-# ## Autocorrealtion Diagnostics
-# acf(resid(model8, type = 'normalized'))
-# pacf(resid(model8, type = 'normalized'))
-# 
-# ## Summary
-# r.squaredGLMM(model8)
-# summary(model8)
+```{r model82}
+## Model selection
+model8 <- lme(log(cmx_w) ~ 1 + idx*(ids)*warunek +
+               log(time_roll),
+             random = ~1|idx+idx|ids+ids|id,
+             data = seq8,
+             correlation = corCAR1(form = ~1|id))
+
+model8.5 <- update(model8,random = ~1|id)
+anova(model8, model8.5)
+model8.6 <- update(model8.5, random = ~idx-1|id )
+anova(model8.6,model8)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+
+## Error Diagnostics
+plot(model8.5)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model8.5, abline = c(0,1))
+plot(model8.5, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model8.5,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model8.5,resid(.,type="pearson") ~ (idx),type=c("p","smooth"))
+plot(model8.5,resid(.,type="pearson") ~ log(time_roll),type=c("p","smooth"))
+
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
+boxplot(resid(model8.5, type = 'normalized') ~ seq8$warunek)
+
+## Autocorrealtion Diagnostics
+acf(resid(model8.5, type = 'normalized'))
+pacf(resid(model8.5, type = 'normalized'))
+
+## Summary
+r.squaredGLMM(model8.5)
+summary(model8.5)
 ``` 
-```{r model9}
-# ## Model selection
-# model9 <- lme(log(cmx_w) ~ 1 + (ids)*warunek +
-#                preferowanie_porzadku2 +
-#                preferowanie_przewidywalnosci2 +
-#                nietolerowanie_wieloznacznosci2 +
-#                zamknietosc_umyslowa2 +
-#                potrzeba_poznania +
-#                time_roll,
-#              random = ~ids|id,
-#              data = seq9,
-#              correlation = corCAR1(form = ~ids|id))
-# 
-# model9.5 <- update(model9,random = ~1|id)
-# anova(model9, model9.5)
-# model9.6 <- update(model9.5, random = ~idx-1|id )
-# anova(model9.6,model9)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Error Diagnostics
-# par(mfrow = c(1,2))
-# plot(model9)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model9, abline = c(0,1))
-# plot(model9, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
-# plot(model9,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
-# plot(model9,resid(.,type="pearson") ~ survey_finish_time,type=c("p","smooth"))
-# plot(model9,resid(.,type="pearson") ~ preferowanie_porzadku2,type=c("p","smooth"))
-# plot(model9,resid(.,type="pearson") ~ preferowanie_przewidywalnosci2,type=c("p","smooth"))
-# plot(model9,resid(.,type="pearson") ~ nietolerowanie_wieloznacznosci2,type=c("p","smooth"))
-# plot(model9,resid(.,type="pearson") ~ zamknietosc_umyslowa2,type=c("p","smooth"))
-# plot(model9,resid(.,type="pearson") ~ potrzeba_poznania,type=c("p","smooth"))
-# #plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
-# boxplot(resid(model9, type = 'normalized') ~ seq9$warunek)
-# 
-# ## Autocorrealtion Diagnostics
-# acf(resid(model9, type = 'normalized'))
-# pacf(resid(model9, type = 'normalized'))
-# 
-# ## Summary
-# r.squaredGLMM(model9)
-# summary(model9)
+```{r model92}
+## Model selection
+model9 <- lme(log(cmx_w) ~ 1 + idx*(ids)*warunek +
+               log(time_roll),
+             random = ~1|idx+idx|ids+ids|id,
+             data = seq9,
+             correlation = corCAR1(form = ~1|id))
+
+model9.5 <- update(model9,random = ~1|id)
+anova(model9, model9.5)
+model9.6 <- update(model9.5, random = ~idx-1|id )
+anova(model9.6,model9)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+
+## Error Diagnostics
+plot(model9.5)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model9.5, abline = c(0,1))
+plot(model9.5, resid(., type = 'normalized') ~ fitted(.), type = c("p", "smooth"))
+plot(model9.5,resid(.,type="pearson") ~ (ids),type=c("p","smooth"))
+plot(model9.5,resid(.,type="pearson") ~ (idx),type=c("p","smooth"))
+plot(model9.5,resid(.,type="pearson") ~ log(time_roll),type=c("p","smooth"))
+#plot(model,resid(.,type="pearson") ~ year,type=c("p","smooth"))
+boxplot(resid(model9.5, type = 'normalized') ~ seq9$warunek)
+
+## Autocorrealtion Diagnostics
+acf(resid(model9.5, type = 'normalized'))
+pacf(resid(model9.5, type = 'normalized'))
+
+## Summary
+r.squaredGLMM(model9.5)
+summary(model9.5)
 ``` 
