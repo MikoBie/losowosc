@@ -9,6 +9,7 @@ data/**
 *.csv
 *.pdf
 *.pages
+*.docx
 **/*.png
 **/*.sav
 
