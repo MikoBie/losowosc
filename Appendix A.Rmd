@@ -17,22 +17,17 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width 
 ```
 
 ```{r setup}
-## Wczytaj pakiety
 library(magrittr)
 library(tidyverse)
 library(reticulate)
 library(lattice)
 library(zoo)
-library(lme4)
-library(lmerTest)
 library(MuMIn)
 library(acss)
 library(haven)
 library(nlme)
-library(sjPlot)
-library(semPlot)
 library(kableExtra)
-library(lavaan)
+source("helpers/helpers.R")
 ## Ustaw temat ggplot()
 theme_set(theme_classic())
 ## Środowisko Conda
