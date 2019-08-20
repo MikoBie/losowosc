@@ -51,6 +51,8 @@ data_long <- gather(data, key = "Index", value = "Bit", matches("^d\\d")) %>%
     filter(!is.na(Bit)) %>%
     arrange(id) %>%
     group_by(id) %>% 
+    mutate(idx = 1:n()) %>%
+    filter(idx < 313) %>%
     summarize(seq = list(Bit)) %>%
     ungroup 
 ``` 
@@ -69,7 +71,7 @@ Although the participants were instructed to only press relevant keys when they 
 
 We used „pybdm" library in Python to compute algorithmic complexity of each series. It is an implementation of Block Decomposition Method which allows extending the power of Coding Theorem Method on longer strings. All other analyses were performed using R (R Core Team, 2019). We used packages „dplyr" (version 0.8.1), „magrittr" (version 1.5), „nlme” (version 3.1), and „ggplot2” (version 3.2.0) for data manipulation, processing, visualization, and mixed models computation.
 
-For each participant, we computed the overall value of the series complexity and the rolling algorithmic complexity. The former was normalized because even though we cut off 10% of the longest indexes, the length of series still varied. Normalization of the algorithmic complexity allowed to compare a series of different lengths.  The rolling algorithmic complexity was based on the computation of algorithmic complexity for a sliding window of length from 5 to 9. That is because the length of the working memory capacity is $7\ \pm 2$ bits of information. Herein, we present the analysis only for the sliding window of length 8, but other analysis with reproducible R code might be found in Appendix A.
+For each participant, we computed the overall value of the series complexity and the rolling algorithmic complexity. The former was normalized because even though we cut off 10% of the longest indexes, the length of series still varied. Normalization of the algorithmic complexity allowed to compare a series of different lengths.  The rolling algorithmic complexity was based on the computation of algorithmic complexity for a sliding window of length from 5 to 9. That is because the length of the working memory capacity is $7\ \pm 2$ bits of information. Herein, we present the analysis only for the sliding window of length 9, but other analysis with reproducible R code might be found in Appendix A.
 
 ```{python prepare_strings}
 import numpy as np
@@ -83,21 +85,21 @@ data = r.data_long
 data.id = data.id.astype(int)
 data.seq = data.seq.apply(lambda x: np.array(x, dtype=int))
 
-bdm = BDM(ndim=1, min_length=8)
-seq8 = pd.DataFrame({'id': r.data_long.id.astype(int),
+bdm = BDM(ndim=1, min_length=9)
+seq9 = pd.DataFrame({'id': r.data_long.id.astype(int),
                      'cmx': data.seq.apply(bdm.nbdm),
-                     'cmx_w': data.seq.apply(lambda x: window_bdm(x, bdm, k = 8))})
+                     'cmx_w': data.seq.apply(lambda x: window_bdm(x, bdm, k = 9))})
 ```
 
 
 ```{r data_processing}
-seq8 <- tbl_df(py$seq8)
+seq9 <- tbl_df(py$seq9)
 
 data <- select(data, -matches("^d\\d")) %>%
     filter(id %in% seq8$id) %>%
-    left_join(select(seq8, id, cmx), by = "id")
+    left_join(select(seq9, id, cmx), by = "id")
 
-seq8 <- seq8 %>%
+seq9 <- seq9 %>%
     unnest() %>%
     group_by(id) %>%
     mutate(idx = 1:n(),
@@ -164,7 +166,7 @@ However, there were significant differences of mean algorithmic complexity betwe
 The results indicate that the task definition conditions affect the overall algorithmic complexity of produced series. In the conditions (the Coin Tossing and the Stock Market conditions), in which task was defined in less abstract manner participants produced more complex series than in the No Instruction condition.
 
 ```{r plot1}
-figure1 <- seq8 %>%
+figure1 <- seq9 %>%
   mutate(Condition = case_when(Condition == "zero" ~ "No Instruction",
                                Condition == "stock" ~ "Stock Market",
                                Condition == "coin" ~ "Coin Tossing")) %>%
@@ -190,25 +192,25 @@ Figure 1. The average algorithmic complexity by the definition condition.
 
 ```{r model8}
 ## Model Selection
-model8 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
+model9 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
              random = ~1|id,
              correlation  = corARMA(form = ~idx|id, p = 1),
-             data = seq8)
-summary(model8)
-r.squaredGLMM(model8)
-d_cohen(model8)
+             data = seq9)
+summary(model9)
+r.squaredGLMM(model9)
+d_cohen(model9)
 ```
 
 In a more detailed analysis, we used the rolling algorithmic complexity. We performed the linear mixed-effects model to test following hypotheses: H3) the algorithmic complexity decreases over time, H3a) the task definition moderates the effect of time on algorithmic complexity of the series, and, H3b) the mathematical experience moderates the effect of time on algorithmic complexity of the series. We present herein analysis for a sliding window of the length 8 only. That is because this model fitted the data the best. The specification of the rest of the models is in Appendix A together with a replicable R script. The dependent variable (the algorithmic complexity) in the models was logged so back-transformed model predictions were bounded to be non-negative since there is no notion of negative randomness / algorithmic complexity. In all models as fixed effects we entered the time step, the task abstraction condition (with No Instruction Condition as a reference level in dummy coding), the mathematical experience condition (with Chemistry as a reference level in dummy coding) and interaction terms between the time step and the task abstraction condition, and between the time step and the mathematical experience condition. Goodness-of-fit of the models were assessed with marginal $R^2$ (variance retained by fixed effects only) and conditional $R^2$ (variance retained by the model as such).
 
-In the model with the sliding window of length 8 as random effect, we had an intercept for subjects. The fitted model indicated several significant effects. There was a significant negative effect of the time step on the algorithmic complexity, $t(53111) = 2.63,\ d = .02,\ p = .009$. With each time step, the algorithmic complexity decreased by $.004\%\ \pm.001$ (see Figure 2. which presents this trend). This result supported the third hypothesis regarding the observed decline in the algorithmic complexity over time. However, hypothesis 3a and 3b were not supported. Neither the task definition nor the level of mathematical experience moderated the effect of time step on the algorithmic complexity (the detailed results are presented in Table 1.). However, similarly to the overall algorithmic complexity, there were significant differences between task definition conditions. The algorithmic complexity in the Coin Tossing Condition was $2.19\%\ \pm.73$ higher than in the No Instruction Condition, $t(179) = 2.96,\ d = .38,\ p = .004$. Similarly, in the Stock Market condition, the algorithmic complexity was higher $2.82\%\ \pm.74$ than in the No Instruction Condition, $t(179) = 2.63,\ d = .34,\ p = .009$.
+In the model with the sliding window of length 9 as random effect, we had an intercept for subjects. The fitted model indicated several significant effects. There was a significant negative effect of the time step on the algorithmic complexity, $t(52794) = 2.78,\ d = .007,\ p = .008$. With each time step, the algorithmic complexity decreased by $.005\%\ \pm.001$ (see Figure 2. which presents this trend). This result supported the third hypothesis regarding the observed decline in the algorithmic complexity over time. However, hypothesis 3a and 3b were not supported. Neither the task definition nor the level of mathematical experience moderated the effect of time step on the algorithmic complexity (the detailed results are presented in Table 1.). However, similarly to the overall algorithmic complexity, there were significant differences between task definition conditions. The algorithmic complexity in the Coin Tossing Condition was $2.48\%\ \pm.73$ higher than in the No Instruction Condition, $t(179) = 2.86,\ d = .38,\ p = .005$. Similarly, in the Stock Market condition, the algorithmic complexity was higher $2.33\%\ \pm.74$ than in the No Instruction Condition, $t(179) = 2.67,\ d = .36,\ p = .008$.
 
 ```{r plot2}
-figure2 <- seq8 %>%
+figure2 <- seq9 %>%
   ungroup() %>%
-  mutate(predict = predict(model8),
-         ymin = predict - 1.96*predict(model8, se.fit = TRUE, level = 0)$se.fit,
-         ymax = predict + 1.96*predict(model8, se.fit = TRUE, level = 0)$se.fit) %>%
+  mutate(predict = predict(model9),
+         ymin = predict - 1.96*predict(model9, se.fit = TRUE, level = 0)$se.fit,
+         ymax = predict + 1.96*predict(model9, se.fit = TRUE, level = 0)$se.fit) %>%
   group_by(idx) %>%
   summarise(predict = mean(predict),
             ymin = mean(ymin),
@@ -231,11 +233,11 @@ figure2 %>%
 
 Figure 2. The decline of the rolling algorithmic complexity over the time step. The grey line depicts the empirical change, while the black line shows value predicted by the model with the $95\%$ Confidence Interval.
 
-The results suggest that although there is a significant difference between task definition conditions in average algorithmic complexity it does not affect the effect of the time step on the algorithmic complexity. The decline is constant across all conditions.
+The results suggest that although there is a significant difference between task definition conditions in average algorithmic complexity it does not affect the effect of the time step on the algorithmic complexity. The decline is constant across all conditions. Comparing to other models using different lengths of the rolling window this model explained the most variance, both in terms of fixed and random effects. However, it is worth noting that after fitting models with the length of sliding window 5 and 6 did not yield significant effects of the time step and the difference between the No Instruction Condition and the Stock Market Condition. This difference might be ascribed to the fact that for shorter strings there is a wider variability in the rolling algorithmic complexity measure. On the other hand, one might wonder whether this effect is not ascribed to the fact that people store up to 6 elements in their working memory (Compare Appendix A).
 
 ```{r table1}
-Predictors_names <- rownames(coef(summary(model8)))
-coef(summary(model8)) %>% 
+Predictors_names <- rownames(coef(summary(model9)))
+coef(summary(model9)) %>% 
   as.tibble() %>% 
   mutate(Predictors = Predictors_names) %>%
   select(Predictors,

@@ -32,6 +32,7 @@ Markov <- function(ciag=ciag,historia=5){
                                p=1/(unique(ciag) %>% length()))
   ## stworzenie listy tabel, w której zapisane są wszystkie kombinacje elementów dla danej historii. Oznacza to, że dla historii 1 i ciągu składającego się tylko z dwóch elementów tabela ma dwa wiersze.
   historia_lista <- list()
+  ciag <- unlist(ciag)
   for (i in (1:historia)) {
     historia_lista[[i]] <- permutations(n=ciag %>% unique %>% length,
                                         r=i,
@@ -89,9 +90,9 @@ Markov <- function(ciag=ciag,historia=5){
     predicted_item <- data_frame(item=0,history=0,p=0) %>%
       mutate(item=if((transition_matrix[[1]] %>% filter(p==max(transition_matrix[[1]]$p)) %>% nrow())==1){
         transition_matrix[[1]] %>% filter(max(transition_matrix[[1]]$p)==p) %$% V0 %>% return()}else{
-          sample(transition_matrix[[1]] %>% filter(p==max(transition_matrix[[1]]$p)) %$% V0 %>% as.character(),size=1) %>% as.numeric() #%>% return()
+          sample(transition_matrix[[1]] %>% filter(p==max(transition_matrix[[1]]$p)) %$% V0 %>% as.character(),size=1) %>% as.numeric() %>% {100} #%>% return()
           ## powoduje, że nie ma elementu losowego
-          return(100)
+          
         },
         history=1,
         p=transition_matrix[[1]]$p %>% max)
@@ -116,7 +117,7 @@ Markov <- function(ciag=ciag,historia=5){
 
 
 
-data <- read_delim("dane/wyniki_new.csv", delim = ";") %>%
+data <- read_delim("losowosc/dane/wyniki_new.csv", delim = ";") %>%
   rename_at(vars(matches("^\\d")), ~str_c("d", .x)) %>%
   mutate_at(vars(matches("^d\\d")), as.integer) %>%
   rename(id = X)
@@ -150,4 +151,7 @@ cat('Historia 11')
 table_11 <- lapply(D[[2]], Markov, historia = 11)
 
 save.image("dane/losowosc.Rmd")
+Markov(D[[2]][1], historia = 2)
+debug(Markov)
 
+load("losowosc/dane/losowosc.RData")

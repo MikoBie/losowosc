@@ -51,9 +51,35 @@ data_long <- gather(data, key = "Index", value = "Bit", matches("^d\\d")) %>%
     filter(!is.na(Bit)) %>%
     arrange(id) %>%
     group_by(id) %>% 
+    mutate(idx = 1:n()) %>%
+    filter(idx < 313) %>%
     summarize(seq = list(Bit)) %>%
     ungroup 
 ``` 
+
+
+```{r chosing_model}
+data_long$seq %>% 
+  map_depth(1, function(table){
+    temp_table <- acf(table,
+                     plot = FALSE,
+                     lag.max = 9) %$%
+      acf
+  }) %>%
+  unlist() %>%
+  matrix(ncol = 10, byrow = TRUE) %>%
+  as.tibble() %>%
+  select(id = V1, len5 = V6, len6 = V7, len7 = V8, len8 = V9, len9 = V10) %>%
+  mutate(id  = 1:n()) %>%
+  gather(key = "len",
+         value = "acf",
+         len5:len9) %>%
+  mutate(acf = abs(acf)) %>%
+  group_by(len) %>%
+  summarise(acf = mean(acf, na.rm = TRUE)) %>%
+  ggplot(aes(x = as.factor(len), y = acf, group = 1)) +
+  geom_line()
+```
 
 #### 2.1.1. Procedure and Design
 
@@ -209,200 +235,199 @@ seq15 <- seq15 %>%
 ```
 
 ```{r model5}
-# ## Model selection
-# model5 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
-#              random = ~idx|id,
-#              data = seq5)
-# model5.4 <- update(model5,correlation = corARMA(form = ~idx|id, p = 1))
-# anova(model5, model5.4)
-# model5.5 <- update(model5.4,random = ~1|id)
-# anova(model5.5, model5.4)
-# model5.6 <- update(model5.5, random = ~idx-1|id )
-# anova(model5.6,model5.4)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Errors diagnostics
-# par(mfrow = c(1,2))
-# plot(model5.4)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model5.4, abline = c(0,1))
-# plot(model5.4, resid(., type = 'normalized') ~ fitted(.))
-# plot(model5.4,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-# boxplot(resid(model5.4, type = 'normalized') ~ seq5$Condition)
-# boxplot(resid(model5.4, type = 'normalized') ~ seq5$Faculty)
-# 
-# ## Autocorrelation Diagnostics
-# acf(resid(model5.4, type = 'normalized'))
-# pacf(resid(model5.4, type = 'normalized'))
-# acf(resid(model5.4))
-# pacf(resid(model5.4))
-# 
-# ## Summary
-# r.squaredGLMM(model5.4)
-# summary(model5.4)
-# seq5 <- seq5 %>%
-#   mutate(predict = predict(model5.4))
+## Model selection
+model5 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
+             random = ~idx|id,
+             data = seq5)
+model5.4 <- update(model5,correlation = corARMA(form = ~idx|id, p = 1))
+anova(model5, model5.4)
+model5.5 <- update(model5.4,random = ~1|id)
+anova(model5.5, model5.4)
+model5.6 <- update(model5.5, random = ~idx-1|id )
+anova(model5.6,model5.4)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+
+## Errors diagnostics
+par(mfrow = c(1,2))
+plot(model5.4)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model5.4, abline = c(0,1))
+plot(model5.4, resid(., type = 'normalized') ~ fitted(.))
+plot(model5.4,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
+boxplot(resid(model5.4, type = 'normalized') ~ seq5$Condition)
+boxplot(resid(model5.4, type = 'normalized') ~ seq5$Faculty)
+
+## Autocorrelation Diagnostics
+acf(resid(model5.4, type = 'normalized'))
+pacf(resid(model5.4, type = 'normalized'))
+acf(resid(model5.4))
+pacf(resid(model5.4))
+
+## Summary
+r.squaredGLMM(model5.4)
+summary(model5.4)
+seq5 <- seq5 %>%
+  mutate(predict = predict(model5.4))
 ```
 
 
 ```{r model6}
-# ## Model specification
-# model6 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
-#              random = ~idx|id,
-#              data = seq6)
-# model6.4 <- update(model6,correlation = corARMA(form = ~idx|id, p = 1))
-# anova(model6, model6.4)
-# model6.5 <- update(model6.4,random = ~1|id)
-# anova(model6.5, model6.4)
-# model6.6 <- update(model6.5, random = ~idx-1|id )
-# anova(model6.6,model6.4)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Error Diagnostics
-# par(mfrow = c(1,2))
-# plot(model6.6)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model6.6, abline = c(0,1))
-# plot(model6.6, resid(., type = 'normalized') ~ fitted(.), type = c('p', 'smooth'))
-# boxplot(resid(model6.6, type = 'pearson') ~ seq6$Condition)
-# boxplot(resid(model6.6, type = 'pearson') ~ seq6$Faculty)
-# 
-# ## Autocorrelation Diagnostics
-# acf(resid(model6.6, type = 'normalized'))
-# pacf(resid(model6.6, type = 'normalized'))
-# acf(resid(model6.6))
-# pacf(resid(model6.6))
-# 
-# ## Summary
-# r.squaredGLMM(model6.6)
-# summary(model6.6)
-# seq6 <- seq6 %>%
-#   mutate(predict = predict(model6.4))
+## Model specification
+model6 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
+             random = ~idx|id,
+             data = seq6)
+model6.4 <- update(model6,correlation = corARMA(form = ~idx|id, p=1))
+anova(model6, model6.4)
+model6.5 <- update(model6.4,random = ~1|id)
+anova(model6.5, model6.4)
+model6.6 <- update(model6.5, random = ~idx-1|id )
+anova(model6.6,model6.4)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+
+## Error Diagnostics
+plot(model6.4)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model6.4, abline = c(0,1))
+plot(model6.4, resid(., type = 'normalized') ~ fitted(.), type = c('p', 'smooth'))
+boxplot(resid(model6.4, type = 'pearson') ~ seq6$Condition)
+boxplot(resid(model6.4, type = 'pearson') ~ seq6$Faculty)
+
+## Autocorrelation Diagnostics
+acf(resid(model6.4, type = 'normalized'))
+pacf(resid(model6.4, type = 'normalized'))
+
+
+## Summary
+r.squaredGLMM(model6.4)
+summary(model6.4)
+seq6 <- seq6 %>%
+  mutate(predict = predict(model6.4))
 ```
 
 ```{r model7}
-# ## Model Selection
-# model7 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
-#              random = ~idx|id,
-#              data = seq7)
-# model7.4 <- update(model7,correlation = corARMA(form = ~idx|id, p = 1))
-# anova(model7, model7.4)
-# model7.5 <- update(model7.4,random = ~1|id)
-# anova(model7.5, model7.4)
-# model7.6 <- update(model7.4, random = ~idx-1|id )
-# anova(model7.6,model7.4)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Error Diagnostics
-# par(mfrow = c(1,2))
-# plot(model7.5)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model7.5, abline = c(0,1))
-# plot(model7.5, resid(., type = 'normalized') ~ fitted(.))
-# plot(model7.5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-# boxplot(resid(model7.5, type = 'normalized') ~ seq7$Condition)
-# boxplot(resid(model7.5, type = 'normalized') ~ seq7$Faculty)
-# 
-# ## Autocorrelation Diagnostics
-# acf(resid(model7.5, type = 'normalized'))
-# pacf(resid(model7.5, type = 'normalized'))
-# acf(resid(model7.5))
-# pacf(resid(model7.5))
-# 
-# ## Summary
-# r.squaredGLMM(model7.5)
-# summary(model7.5)
-# seq7 <- seq7 %>%
-#   ungroup() %>%
-#   mutate(predict = predict(model7.5))
+## Model Selection
+model7 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
+             random = ~idx|id,
+             data = seq7)
+model7.4 <- update(model7,correlation = corARMA(form = ~idx|id, p = 1))
+anova(model7, model7.4)
+model7.5 <- update(model7.4,random = ~1|id)
+anova(model7.5, model7.4)
+model7.6 <- update(model7.4, random = ~idx-1|id )
+anova(model7.6,model7.4)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+
+## Error Diagnostics
+par(mfrow = c(1,2))
+plot(model7.5)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model7.5, abline = c(0,1))
+plot(model7.5, resid(., type = 'normalized') ~ fitted(.))
+plot(model7.5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
+boxplot(resid(model7.5, type = 'normalized') ~ seq7$Condition)
+boxplot(resid(model7.5, type = 'normalized') ~ seq7$Faculty)
+
+## Autocorrelation Diagnostics
+acf(resid(model7.5, type = 'normalized'))
+pacf(resid(model7.5, type = 'normalized'))
+acf(resid(model7.5))
+pacf(resid(model7.5))
+
+## Summary
+r.squaredGLMM(model7.5)
+summary(model7.5)
+d_cohen(model7.5)
+seq7 <- seq7 %>%
+  ungroup() %>%
+  mutate(predict = predict(model7.5))
 ```
 
 ```{r model8}
 ## Model Selection
 model8 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
-             random = ~idx|id,
+             random = ~1|id,
              data = seq8)
-model8.4 <- update(model8,correlation = corARMA(form = ~idx|id, p = 1))
+model8.4 <- update(model8,correlation = corAR1(form = ~idx|id))
 anova(model8, model8.4)
 model8.5 <- update(model8.4,random = ~1|id)
-# anova(model8.5, model8.4)
-# model8.6 <- update(model8.5, random = ~idx-1|id )
-# anova(model8.6,model8.4)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# model8.7 <- update(model8.5, correlation = corARMA(form = ~1|id, p = 1))
-# 
-# ## Error Diagnostics
-# par(mfrow = c(1,2))
-# plot(model8.5)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model8.5, abline = c(0,1))
-# plot(model8.5, resid(., type = 'normalized') ~ fitted(.), type('p', 'smooth'))
-# plot(model8.5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-# boxplot(resid(model8.5, type = 'normalized') ~ seq8$Condition)
-# boxplot(resid(model8.5, type = 'normalized') ~ seq8$Faculty)
-# 
-# ## Autocorrealtion Diagnostics
-# acf(resid(model8.5, type = 'normalized'))
-# pacf(resid(model8.5, type = 'normalized'))
-# acf(resid(model8.7))
-# pacf(resid(model8.7))
-# 
-# ## Summary
-# r.squaredGLMM(model8.5)
-# summary(model8.5)
-# seq8 <- seq8 %>%
-#   mutate(predict = predict(model8.5))
+anova(model8.5, model8.4)
+model8.6 <- update(model8.5, random = ~idx-1|id )
+anova(model8.6,model8.4)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+model8.7 <- update(model8.5, correlation = corARMA(form = ~1|id, p = 1))
+
+## Error Diagnostics
+par(mfrow = c(1,2))
+plot(model8.5)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model8.5, abline = c(0,1))
+plot(model8.5, resid(., type = 'normalized') ~ fitted(.), type=c('p', 'smooth'))
+plot(model8.5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
+boxplot(resid(model8.5, type = 'normalized') ~ seq8$Condition)
+boxplot(resid(model8.5, type = 'normalized') ~ seq8$Faculty)
+
+## Autocorrealtion Diagnostics
+acf(resid(model8.5, type = 'normalized'))
+pacf(resid(model8.5, type = 'normalized'))
+acf(resid(model8.7))
+pacf(resid(model8.7))
+
+## Summary
+r.squaredGLMM(model8.5)
+summary(model8.5)
+seq8 <- seq8 %>%
+  mutate(predict = predict(model8.5))
 ```
 
 ```{r model9}
-# ## Model Selection
-# model9 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
-#              random = ~idx|id,
-#              data = seq9)
-# model9.4 <- update(model9,correlation = corARMA(form = ~idx|id, p = 1))
-# anova(model9, model9.4)
-# model9.5 <- update(model9.4,random = ~1|id)
-# anova(model9.5, model9.4)
-# model9.6 <- update(model9.5, random = ~idx-1|id )
-# anova(model9.6,model9.4)
-# #model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
-# #model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
-# #anova(model3, model4, model5, model6, model7)
-# 
-# ## Error Diagonostics
-# par(mfrow = c(1,2))
-# plot(model9.5)
-# #qqnorm(model2,~ranef(., level = 1))
-# qqnorm(model9.5, abline = c(0,1))
-# plot(model9.5, resid(., type = 'normalized') ~ fitted(.))
-# plot(model9.5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
-# boxplot(resid(model9.5, type = 'normalized') ~ seq9$Condition)
-# boxplot(resid(model9.5, type = 'normalized') ~ seq9$Faculty)
-# 
-# ## Autocorrelation Diagnostics
-# acf(resid(model9.5, type = 'normalized'))
-# pacf(resid(model9.5, type = 'normalized'))
-# acf(resid(model9.5))
-# pacf(resid(model9.5))
-# 
-# ## Summary
-# r.squaredGLMM(model9.5)
-# summary(model9.5)
-# seq9 <- seq9 %>%
-#   mutate(predict = predict(model9.5))
+## Model Selection
+model9 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
+             random = ~idx|id,
+             data = seq9)
+model9.4 <- update(model9,correlation = corARMA(form = ~idx|id, p = 1))
+anova(model9, model9.4)
+model9.5 <- update(model9.4,random = ~1|id)
+anova(model9.5, model9.4)
+model9.6 <- update(model9.5, random = ~idx-1|id )
+anova(model9.6,model9.4)
+#model5 <- update(model2,correlation = corARMA(form = ~idx|id, p = 2))
+#model6 <- update(model5, correlation = corARMA(form = ~idx|id, p = 7))
+#anova(model3, model4, model5, model6, model7)
+
+## Error Diagonostics
+par(mfrow = c(1,2))
+plot(model9.5)
+#qqnorm(model2,~ranef(., level = 1))
+qqnorm(model9.5, abline = c(0,1))
+plot(model9.5, resid(., type = 'normalized') ~ fitted(.))
+plot(model9.5,resid(.,type="pearson") ~ idx,type=c("p","smooth"))
+boxplot(resid(model9.5, type = 'normalized') ~ seq9$Condition)
+boxplot(resid(model9.5, type = 'normalized') ~ seq9$Faculty)
+
+## Autocorrelation Diagnostics
+acf(resid(model9.5, type = 'normalized'))
+pacf(resid(model9.5, type = 'normalized'))
+acf(resid(model9.5))
+pacf(resid(model9.5))
+
+## Summary
+r.squaredGLMM(model9.6)
+summary(model9.5)
+seq9 <- seq9 %>%
+  mutate(predict = predict(model9.5))
 ```
 
 ```{r model_comparison}
 ## I am not sure if we can do that this way.
-## AIC(model5.4,model6.6, model7.5, model8.5, model9.5)
+AIC(model5.4,model6.6, model7.5, model8.5, model9.6)
 
 ```
 
