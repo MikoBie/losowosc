@@ -7,7 +7,7 @@ author:
     affiliation: The Robert Zajonc Institute for Social Studies
     affiliation_url: www.iss.uw.edu.pl/en/
 date: "`r Sys.Date()`"
-output: radix::radix_article
+output: distill::distill_article
 ---
 
 ## 2. Method
@@ -69,26 +69,28 @@ The participants were students from the Psychology Department and the Chemistry 
 
 Although the participants were instructed to only press relevant keys when they saw a red square some people pressed it more often and others less frequent than 300 times. Therefore, the length of the series varied between subjects from 218 to 1016 elements ($Median = 300$). However, there were only a few people who produced significantly longer series than others. Therefore, we cut off observations exceeding the typical length of the series, i.e. we cut off the last 10% of observations (with indexes longer than 313).
 
-We used „pybdm" library in Python to compute algorithmic complexity of each series. It is an implementation of Block Decomposition Method which allows extending the power of Coding Theorem Method on longer strings. All other analyses were performed using R (R Core Team, 2019). We used packages „dplyr" (version 0.8.1), „magrittr" (version 1.5), „nlme” (version 3.1), and „ggplot2” (version 3.2.0) for data manipulation, processing, visualization, and mixed models computation.
+We used ''pybdm'' library in Python to compute algorithmic complexity of each series. It is an implementation of Block Decomposition Method which allows extending the power of Coding Theorem Method on longer strings. All other analyses were performed using R (R Core Team, 2019). We used packages ''dplyr'' (version 0.8.1), ''magrittr'' (version 1.5), ''nlme'' (version 3.1), and ''ggplot2'' (version 3.2.0) for data manipulation, processing, visualization, and mixed models computation.
 
 For each participant, we computed the overall value of the series complexity and the rolling algorithmic complexity. The former was normalized because even though we cut off 10% of the longest indexes, the length of series still varied. Normalization of the algorithmic complexity allowed to compare a series of different lengths.  The rolling algorithmic complexity was based on the computation of algorithmic complexity for a sliding window of length from 5 to 9. That is because the length of the working memory capacity is $7\ \pm 2$ bits of information. Herein, we present the analysis only for the sliding window of length 9, but other analysis with reproducible R code might be found in Appendix A.
 
 ```{python prepare_strings}
 import numpy as np
 import pandas as pd
-from bdm import BDMRecursive as BDM
+from pybdm import BDM
+from pybdm import PartitionIgnore, PartitionRecursive
 
-def window_bdm(seq, bdm, k=7):
+def window_bdm(seq, bdm, k=9):
     return np.array([ bdm.bdm(seq[i:(i+k)]) for i in range(len(seq) - k) ])
     
 data = r.data_long
 data.id = data.id.astype(int)
 data.seq = data.seq.apply(lambda x: np.array(x, dtype=int))
 
-bdm = BDM(ndim=1, min_length=9)
+bdm_recursive = BDM(ndim=1, partition=PartitionRecursive, min_length=9)
+bdm_ignore = BDM(ndim=1, partition=PartitionIgnore)
 seq9 = pd.DataFrame({'id': r.data_long.id.astype(int),
-                     'cmx': data.seq.apply(bdm.nbdm),
-                     'cmx_w': data.seq.apply(lambda x: window_bdm(x, bdm, k = 9))})
+                     'cmx': data.seq.apply(bdm_ignore.nbdm),
+                     'cmx_w': data.seq.apply(lambda x: window_bdm(x, bdm_recursive, k = 9))})
 ```
 
 
@@ -96,14 +98,14 @@ seq9 = pd.DataFrame({'id': r.data_long.id.astype(int),
 seq9 <- tbl_df(py$seq9)
 
 data <- select(data, -matches("^d\\d")) %>%
-    filter(id %in% seq8$id) %>%
+    filter(id %in% seq9$id) %>%
     left_join(select(seq9, id, cmx), by = "id")
 
 seq9 <- seq9 %>%
     unnest() %>%
     group_by(id) %>%
     mutate(idx = 1:n(),
-           cmx_r = rollmean(cmx_w, k = 8, align = "center", na.pad = TRUE)) %>%
+           cmx_r = rollmean(cmx_w, k = 9, align = "center", na.pad = TRUE)) %>%
     ungroup %>%
     left_join(select(data, -cmx), by = "id") %>%
     mutate(Condition = fct_relevel(as.factor(Condition), "zero")) %>%
@@ -157,7 +159,7 @@ observed_difference <- data %>%
 p_value(observed_difference = observed_difference, distribution = permutation_stock_zero)
 ```
 
-Before conducting a more detailed analysis, we tested the hypothesis whether the mathematical experience (H1) and the task definition condition (H2) affect the overall value of the series complexity. For testing these hypotheses we followed following one-sided permutation test of mean difference procedure. First, from the results, we resampled without replacement relevant groups 100,000 times. Second, for each resampling, we computed the difference between group means. Third, we calculated p-value as the proportion of the number of resampled difference greater than the observed difference to all resampled differences (the reproducible R script is in Appendix A). To test the hypothesis that students with more mathematical experience will produce series more complex than others we compared the difference between mean algorithmic complexity of series produced by chemistry students and psychology students. The difference between mean algorithmic complexity in group of psychology students ($N = 93,\ M = .757,\ SD = .223$) and chemistry students ($N = 90,\ M = .771,\ SD = .218$) was not significant, $p = .33$.
+Before conducting a more detailed analysis, we tested the hypothesis whether the mathematical experience (H1) and the task definition condition (H2) affect the overall value of the series complexity. For testing these hypotheses we followed the following one-sided permutation test of mean difference procedure. First, from the results, we resampled without replacement relevant groups 100,000 times. Second, for each resampling, we computed the difference between group means. Third, we calculated p-value as the proportion of the number of resampled difference greater than the observed difference to all resampled differences (the reproducible R script is in Appendix A). To test the hypothesis that students with more mathematical experience will produce series more complex than others we compared the difference between mean algorithmic complexity of series produced by chemistry students and psychology students. The difference between mean algorithmic complexity in group of psychology students ($N = 93,\ M = .757,\ SD = .223$) and chemistry students ($N = 90,\ M = .771,\ SD = .218$) was not significant, $p = .33$.
 
 Although this result suggests that the mathematical experience does not affect the overall algorithmic complexity of produced series we would argue that this conclusion needs further examination. In this study, we interfered with mathematical experience based on the field of studies. Therefore, we did not control for individual differences. 
 
@@ -190,9 +192,9 @@ figure1 %>%
 
 Figure 1. The average algorithmic complexity by the definition condition.
 
-```{r model8}
+```{r model9}
 ## Model Selection
-model9 <- lme(log(cmx_w) ~ 1 +idx*Faculty + idx*Condition,
+model9 <- lme(log(cmx_w) ~ 1 + idx + Condition + Faculty + idx:Faculty + idx:Condition,
              random = ~1|id,
              correlation  = corARMA(form = ~idx|id, p = 1),
              data = seq9)
@@ -201,7 +203,7 @@ r.squaredGLMM(model9)
 d_cohen(model9)
 ```
 
-In a more detailed analysis, we used the rolling algorithmic complexity. We performed the linear mixed-effects model to test following hypotheses: H3) the algorithmic complexity decreases over time, H3a) the task definition moderates the effect of time on algorithmic complexity of the series, and, H3b) the mathematical experience moderates the effect of time on algorithmic complexity of the series. We present herein analysis for a sliding window of the length 8 only. That is because this model fitted the data the best. The specification of the rest of the models is in Appendix A together with a replicable R script. The dependent variable (the algorithmic complexity) in the models was logged so back-transformed model predictions were bounded to be non-negative since there is no notion of negative randomness / algorithmic complexity. In all models as fixed effects we entered the time step, the task abstraction condition (with No Instruction Condition as a reference level in dummy coding), the mathematical experience condition (with Chemistry as a reference level in dummy coding) and interaction terms between the time step and the task abstraction condition, and between the time step and the mathematical experience condition. Goodness-of-fit of the models were assessed with marginal $R^2$ (variance retained by fixed effects only) and conditional $R^2$ (variance retained by the model as such).
+In a more detailed analysis, we used the rolling algorithmic complexity. We performed the linear mixed-effects model to test following hypotheses: H3) the algorithmic complexity decreases over time, H3a) the task definition moderates the effect of time on algorithmic complexity of the series, and, H3b) the mathematical experience moderates the effect of time on algorithmic complexity of the series. We present herein analysis for a sliding window of the length 9 only. That is because this model fitted the data the best. The specification of the rest of the models is in Appendix A together with a replicable R script. The dependent variable (the algorithmic complexity) in the models was logged so back-transformed model predictions were bounded to be non-negative since there is no notion of negative randomness / algorithmic complexity. In all models as fixed effects we entered the time step, the task abstraction condition (with No Instruction Condition as a reference level in dummy coding), the mathematical experience condition (with Chemistry as a reference level in dummy coding) and interaction terms between the time step and the task abstraction condition, and between the time step and the mathematical experience condition. Goodness-of-fit of the models were assessed with marginal $R^2$ (variance retained by fixed effects only) and conditional $R^2$ (variance retained by the model as such).
 
 In the model with the sliding window of length 9 as random effect, we had an intercept for subjects. The fitted model indicated several significant effects. There was a significant negative effect of the time step on the algorithmic complexity, $t(52794) = 2.78,\ d = .007,\ p = .008$. With each time step, the algorithmic complexity decreased by $.005\%\ \pm.001$ (see Figure 2. which presents this trend). This result supported the third hypothesis regarding the observed decline in the algorithmic complexity over time. However, hypothesis 3a and 3b were not supported. Neither the task definition nor the level of mathematical experience moderated the effect of time step on the algorithmic complexity (the detailed results are presented in Table 1.). However, similarly to the overall algorithmic complexity, there were significant differences between task definition conditions. The algorithmic complexity in the Coin Tossing Condition was $2.48\%\ \pm.73$ higher than in the No Instruction Condition, $t(179) = 2.86,\ d = .38,\ p = .005$. Similarly, in the Stock Market condition, the algorithmic complexity was higher $2.33\%\ \pm.74$ than in the No Instruction Condition, $t(179) = 2.67,\ d = .36,\ p = .008$.
 
@@ -349,14 +351,15 @@ For each participant, we computed the overall value of the series complexity. Th
 ```{python prepare_strings2}
 import numpy as np
 import pandas as pd
-from bdm import BDMRecursive as BDM
+from pybdm import BDM
+from pybdm import PartitionIgnore, PartitionRecursive
     
 data = r.data2_long
 data.id = data.id.astype(int)
 data.ids = data.ids.astype(int)
 data.seq = data.seq.apply(lambda x: np.array(x, dtype=int))
 
-bdm = BDM(ndim=1, min_length=7)
+bdm = BDM(ndim=1, partition=PartitionRecursive, min_length=9)
 seq7 = pd.DataFrame({'id': r.data2_long.id.astype(int),
                      'ids': r.data2_long.ids.astype(int),
                      'cmx': data.seq.apply(bdm.nbdm)})
@@ -396,7 +399,7 @@ d_cohen(model_quadratic)
 
 First, we computed algorithmic complexity for each series produced by participants. Afterward, we used the linear mixed-effects model to test following hypothesis: H4) the algorithmic complexity decreases over time, H4a) the instruction condition moderates the effect of time on the algorithmic complexity, H5) the need for cognition increases the algorithmic complexity, H6a) the preference for order and structure sub-scale of need for closure decreases the algorithmic complexity, H6b) the desire for predictability sub-scale of the need for cognition scale decrease the algorithmic complexity, H6c) the discomfort and ambiguity sub-scale of the need for closure scale increases the algorithmic complexity, H6d) the closed-mindedness sub-scale of the need for closure scale decreases the algorithmic complexity. The dependent variable (the algorithmic complexity) in the model was normalized because even though people were asked to produce a series of 12 elements, the length of the produced series varied. Normalization of the algorithmic complexity allowed to compare a series of different lengths. As fixed effects we entered the instruction condition (with the homogeneous condition as the reference level in dummy coding), the series number (we entered also a quadratic term for the series number because it increased the model fit), the interaction term between series number and the instruction condition, the order sub-scale from the need for closure, the ambiguity sub-scale from the need for closure scale, the closed-mindedness sub-scale from the need for closure scale, the predictability sub-scale from the need for closure scale, and the need for cognition scale. Goodness-of-fit of the model was assessed with marginal $R^2$ (variance retained by fixed effects only) and conditional $R^2$ (variance retained by the model as such). As random effects, we had an intercept for subjects and random effect of slope for the series number.
 
-The fitted model indicated several significant effects. There was a significant negative effect of the series number on the algorithmic complexity, $t(1501)=4.396,\ d = .13,\ p<.001$. With each series, the algorithmic complexity decreased by $.045\ \pm.01$ points. However, since the quadratic term was also present, $t(1501)=3.826,\ d = .009,\ p<.001$, the linear decline of the algorithmic complexity was reduced by $.003\ \pm.0009$ point with each series. This result supported the fourth hypothesis regarding the observed decline in the algorithmic complexity over time (compare Figure 3.). However, hypothesis 4 did not account for the decrease of the algorithmic complexity decline with each series. It seems that the algorithmic complexity at some point even increased. This change in the trend requires further examination. Hypothesis 4a was not supported. The instruction manipulation affected neither the change of the algorithmic complexity over series nor the algorithmic complexity itself.
+The fitted model indicated several significant effects. There was a significant negative effect of the series number on the algorithmic complexity, $t(1501)=4.396,\ d = .13,\ p<.001$. With each series, the algorithmic complexity decreased by $.045\ \pm.01$ points. However, since the quadratic term was also present, $t(1501)=3.826,\ d = .009,\ p<.001$, the linear decline of the algorithmic complexity was reduced by $.003\ \pm.0009$ point with each series. This result supported the fourth hypothesis regarding the observed decline in the algorithmic complexity over time (compare Figure 3.). However, hypothesis 4 did not account for the quadratic decrease of the algorithmic complexity decline with each series. It seems that the algorithmic complexity at some point even increased. This change in the trend requires further examination. Hypothesis 4a was not supported. The instruction manipulation affected neither the change of the algorithmic complexity over series nor the algorithmic complexity itself.
 
 The observed trend herein was similar to the trend observed in Study 1. The algorithmic complexity decreased with each series. However, the expected effect of instruction was not present. The decline of the algorithmic complexity was the same in both conditions. Unlike, Study 1 the negative relationship between a series number and algorithmic complexity was quadratic. Therefore, the trend diminished with each series. This result might be attributed either to the difference between tasks in Study 1 and Study 2 or to the different experimental settings (online research vs classical research). Nevertheless, it requires further investigation.
 
@@ -430,7 +433,7 @@ figure3 %>%
 
 Figure 3. The scatter plot of algorithmic complexity against a series number. The points were jittered for the sake of clearer visualization. The black line depicts the fitted trend of decline of the normalized algorithmic complexity across the series.
 
-Additionally, the fitted model allowed testing hypothesis regarding the Need for Cognition and sub-scales of the short version of the Need for Closure relationships with the algorithmic complexity. The Need for Cognition was possessively correlated with the average algorithmic complexity of the series, $t(175) = 2.54,\ d = .012,\ p < .05$. With the one-point increase on the Need for Cognition scale, there was $.003\ \pm.001$ increase in the algorithmic complexity. This result supported the hypothesis that people who are more inclined to challenging tasks produces more complex series. Hypothesis 6b regarding the relationship between preference for order and structure sub-scale from the Need for Closure Scale and the algorithmic complexity was not supported. However, the desire for predictability sub-scale was negatively correlated to the algorithmic complexity, $t(175) = 2.40,\ d = .083,\ p<.05$. With the one-point increase on the probability scale, the average algorithmic complexity of the series declined by $-.012\ \pm.008$. This result supported hypothesis people who prefer predictable environment produce less complex series. Hypothesis 6c regarding the relationship between discomfort with ambiguity sub-scale and the algorithmic complexity was not supported. However, the close-mindedness sub-scale was negatively correlated with the algorithmic complexity, $t(175)=2.39,\ d = .074,\ p<.05$. With the one-point increase in the close-mindedness sub-scale, the average algorithmic complexity declined by $-.017\ \pm.007$. People who do not like to have their opinion confronted with other produced series less complex. The detailed results are presented in Table 2. (the reproducible R code is in Appendix A).
+Additionally, the fitted model allowed testing hypothesis regarding the Need for Cognition and sub-scales of the short version of the Need for Closure relationships with the algorithmic complexity. The Need for Cognition was possessively correlated with the average algorithmic complexity of the series, $t(175) = 2.54,\ d = .012,\ p < .05$. With the one-point increase on the Need for Cognition scale, there was $.003\ \pm.001$ increase in the algorithmic complexity. This result supported the hypothesis that people who are more inclined to challenging tasks produces more complex series. Hypothesis 6b regarding the relationship between preference for order and structure sub-scale from the Need for Closure Scale and the algorithmic complexity were not supported. However, the desire for predictability sub-scale was negatively correlated to the algorithmic complexity, $t(175) = 2.40,\ d = .083,\ p<.05$. With the one-point increase on the probability scale, the average algorithmic complexity of the series declined by $-.012\ \pm.008$. This result supported hypothesis that people who prefer predictable environment produce less complex series. Hypothesis 6c regarding the relationship between discomfort with ambiguity sub-scale and the algorithmic complexity was not supported. However, the close-mindedness sub-scale was negatively correlated with the algorithmic complexity, $t(175)=2.39,\ d = .074,\ p<.05$. With the one-point increase in the close-mindedness sub-scale, the average algorithmic complexity declined by $-.017\ \pm.007$. People who do not like to have their opinion confronted with other produced series less complex. The detailed results are presented in Table 2. (the reproducible R code is in Appendix A).
 
 The observed herein correlations allow to assume that the ability to produce random series might be attributed not only to situational determinants but also to personality. Especially the relationship between the algorithmic complexity and the need for cognition requires further investigation. It seems that the intellectual determinants of the ability to produce random series might be moderated by this relationship. Although the presented herein effects are interesting from the theoretical point of view some of them had negligible effects sizes. Therefore, further examination of the personality component of the ability to produce random series requires using statistical tests with higher statistical power.
 
