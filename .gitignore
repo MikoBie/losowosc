@@ -21,3 +21,9 @@ data/**
 
 *.vscode
 __pycache__/
+
+# TEX
+**/*.tex
+**/*.out
+**/*.log
+**/*.aux
