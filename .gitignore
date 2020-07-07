@@ -3,15 +3,12 @@
 *.Renviron
 
 # Data
-data/**
 **/*.html
 *.json
-*.csv
 *.pdf
 *.pages
 *.docx
 **/*.png
-**/*.sav
 
 **/*.Rproj
 .Rproj.user
