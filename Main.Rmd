@@ -26,17 +26,27 @@ knitr::opts_chunk$set(echo = FALSE, include = FALSE, message = FALSE, warning = 
 ## Wczytaj pakiety
 library(magrittr)
 library(tidyverse)
+library(broom)
 library(reticulate)
 library(lattice)
 library(zoo)
 library(MuMIn)
 library(acss)
 library(haven)
-library(nlme)
+library(lme4)
+library(lmerTest)
 library(kableExtra)
+library(ggpubr)
+library(quantreg) 
+library(emmeans)
 source("helpers/helpers.R")
 ## Ustaw temat ggplot()
 theme_set(theme_classic())
+COLORS <- RColorBrewer::brewer.pal(8, "Set1")
+options(
+    ggplot2.discrete.color = COLORS,
+    ggplot2.discrete.fill  = COLORS
+)
 ## Środowisko Conda
 use_condaenv("bdm")
 ```
@@ -105,7 +115,12 @@ seq8 <- as_tibble(py$seq8)
 
 data <- select(data, -matches("^d\\d")) %>%
     filter(id %in% seq8$id) %>%
-    left_join(select(seq8, id, cmx), by = "id")
+    left_join(select(seq8, id, cmx), by = "id") %>%
+    mutate(Condition = case_when(Condition == "coin" ~ "Coin Tossing",
+                                 Condition == "stock" ~ "Stock Market",
+                                 Condition == "zero" ~ "No Instruction"),
+           Condition = factor(Condition, levels = c( "No Instruction", "Stock Market", "Coin Tossing")))
+           
 
 seq8 <- seq8 %>%
     unnest(cols = cmx_w) %>%
@@ -115,126 +130,153 @@ seq8 <- seq8 %>%
            cmx_r = rollmean(cmx_w, k = 8, align = "center", na.pad = TRUE)) %>%
     ungroup %>%
     left_join(select(data, -cmx), by = "id") %>%
-    mutate(Condition = fct_relevel(as.factor(Condition), "zero")) %>%
+    mutate(Condition = fct_relevel(as.factor(Condition), "No Instruction")) %>%
     filter(idx < 313)  %>%
     mutate(cmx_wc = mean(cmx_w) - cmx_w)
 ```
 
-
-```{r mean_difference_psychology_chemistry}
-## Chemistry - Psychology
-permutation_faculty <- permutaion_test(data = data, group_var = 'Faculty')
-observed_difference <- data %>%
-    group_by(Faculty) %>%
-    summarise(mean = mean(cmx),
-              sd = sd(cmx))
-p_value(observed_difference = observed_difference, distribution = permutation_faculty)
-
-## Coin - Zero
-permutation_coin_zero <- data %>%
-  filter(Condition != 'stock') %>%
-  permutaion_test(data = ., group_var = 'Condition')
-observed_difference <- data %>%
-  filter(Condition != 'stock') %>%
-  group_by(Condition) %>%
-  summarise(mean = mean(cmx),
-            sd = sd(cmx))
-p_value(observed_difference = observed_difference, distribution = permutation_coin_zero)
-
-## Coin - Stock
-permutation_coin_stock <- data %>%
-  filter(Condition != 'zero') %>%
-  permutaion_test(data = ., group_var = 'Condition')
-observed_difference <- data %>%
-  filter(Condition != 'zero') %>%
-  group_by(Condition) %>%
-  summarise(mean = mean(cmx),
-            sd = sd(cmx))
-p_value(observed_difference = observed_difference, distribution = permutation_coin_stock)
-
-## Stock - zero
-permutation_stock_zero <- data %>%
-  filter(Condition != 'coin') %>%
-  permutaion_test(data = ., group_var = 'Condition')
-observed_difference <- data %>%
-  filter(Condition != 'coin') %>%
-  group_by(Condition) %>%
-  summarise(mean = mean(cmx),
-            sd = sd(cmx))
-p_value(observed_difference = observed_difference, distribution = permutation_stock_zero)
-```
-
 \subsubsection{Results}
 
-Before conducting a more detailed analysis, we tested hypotheses regarding the effect of task description (H1) and mathematical experience (H2) on the overall algorithmic complexity of human-generated series. For testing these hypotheses we followed the following one-sided permutation test of mean difference procedure. First, from the results, we resampled without replacement relevant groups 100,000 times. Second, for each resampling, we computed the difference between group means. Third, we calculated the p-value as the proportion of the number of resampled differences greater than the observed difference to all resampled differences (the reproducible R script is Supplementary Materials). 
+Before conducting a more detailed analysis, we tested hypotheses regarding the effect of the task description (H1) and mathematical experience (H2) on the overall algorithmic complexity of human-generated series. For testing these hypotheses we used non parametric tests to assess whether the distributions of algorithmic complexity were systematically different between groups of observations.
 
-The results showed that there were significant differences of mean of the overall algorithmic complexity between the task description conditions. The mean algorithmic complexity in the Coin Tossing Condition (\(N = 63,\ M = .797,\ SD = .193\)) was greater than in the No Instruction Condition (\(N = 59,\ M = .698,\ SD = .267\)), \(p = .01\). Similarly, the mean algorithmic complexity in the Stock Market Condition (\(N = 61,\ M = .793,\ SD = .184\)) was greater than in the No Instruction Condition (\(N = 59,\ M = .698,\ SD = .267\)), \(p = .01\). Only the difference in means between the Coin Tossing Condition and the Stock Market Condition was not significant, \(p = .46\). The results indicate that the task description conditions affect the overall algorithmic complexity of human-generated series (compare Figure 2.). In the conditions (the Coin Tossing and the Stock Market conditions), in which task was defined in less abstract manner participants produced more complex series than in the No Instruction condition.
-
-To test the hypothesis that students with more mathematical experience will produce series more complex than others we compared the difference between the mean of the overall algorithmic complexity of series produced by chemistry students and psychology students. The difference between mean algorithmic complexity in group of psychology students (\(N = 93,\ M = .757,\ SD = .223\)) and chemistry students (\(N = 90,\ M = .771,\ SD = .218\)) was not significant, \(p = .33\). Although this result suggests that the mathematical experience does not affect the overall algorithmic complexity of produced series we would argue that this conclusion needs further examination. In this study, we interfered with mathematical experience based on the field of studies. Therefore, we did not control for the actual mathematical experience but based our assumption on the number of classes students have taken over the course of their academic career.
-
-```{r plot1, include = TRUE, fig.cap="Figure 1. The average overall algorithmic complexity as a function of the task description condition. In the conditions (the Coin Tossing and the Stock Market conditions), in which task was defined in less abstract manner participants produced more complex series than in the No Instruction condition."}
-figure1 <- seq8 %>%
-  mutate(Condition = case_when(Condition == "zero" ~ "No Instruction",
-                               Condition == "stock" ~ "Stock Market",
-                               Condition == "coin" ~ "Coin Tossing")) %>%
-  group_by(Condition, idx) %>%
-  summarise(cmx_w = mean(cmx_w)) %>%
-  ggplot(aes(x = factor(Condition, levels = c("Coin Tossing", "Stock Market", "No Instruction")), y = (cmx_w), fill = Condition)) +
-  geom_boxplot(show.legend = FALSE) +
-  stat_boxplot(geom = "errorbar", width = .2) +
-  labs(title = "",
-       x = "Condition",
-       y = "Algorithmic complexity")
-figure1
-#figure1 %>%
-#  ggsave(filename = "figure_1.png",
-#       device = "png",
-#       dpi = 300,
-#       height = 4.5,
-#       width = 6)
-
+```{r h1_test}
+kruskal.test(cmx ~ Condition, data = data)
 ```
 
+```{r plot1, include = TRUE, fig.cap = ""}
+plt1 <- data %>%
+    ggplot(aes(x = cmx, fill = Condition)) +
+    geom_histogram(bins = 10, color = "white") +
+    facet_wrap(~Condition, ncol = 1L) +
+    labs(x = "Normalized Algorithmic Complexity", y = "Count") +
+    guides(fill = FALSE)
+
+plt2 <- data %>%
+    ggplot(aes(sample = cmx, color = Condition)) +
+    geom_qq_line(linetype = 2L, color = "black") +
+    geom_qq(show.legend  = FALSE) +
+    facet_wrap(~Condition, ncol = 1L) +
+    labs(x = "Normal quantiles", y = "Observed quantiles")
+
+figure1 <- ggarrange(plt1,plt2)
+
+figure1
+
+figure1 %>% ggsave(filename = "figure_1.png",
+       device = "png",
+       dpi = 300,
+       height = 4.5,
+       width = 6)
+```
+
+The Kruskal-Wallis Rank Sum Test revealed a significant difference between distributions of algorithmic complexity in tasks description's experimental conditions, $\chi^2(2) = 7.0051, p < .0301$. The closer visual examination of the plots showed that the main variation between distributions is observed between their lower ends (compare Figure 2.). In the No Instruction condition, the frequency of the lowest results is relatively higher than in the Coin Tossing and the Stock Market conditions. Therefore, to better understand this effect, we performed quantile regression across quantiles of the distributions. As the dependent variable we entered normalized algorithmic complexity and as the fixed effect the task description condition (with No Instruction Condition as a reference level in dummy coding). The analysis revealed that in the first quantile ($\tau = .25$) there was a significant difference in distributions between the Stock Market Condition and the No Instruction Condition, $95%\ CI\ [0.0868\ 0.4576]$ and the Coin Tossing Condition and the No Instruction Condition, $95%\ CI\ [0.0851\ 0.4079]$. In the second quantile ($\tau = .5$), there was significant difference in distributions between Coin Tossing Condition and No Instruction Condition, $95\%\ CI\ [0.0118\ 0.872]$. There were no significant differences in distributions in the third quantile ($\tau = .75$). These results indicate that both the Stock Market and Coin Tossing conditions prevent people from producing series of low algorithmic complexity. The differences in the task description conditions seem not to affect the distributions in its higher ends.
+
+```{r quantreg}
+# Full quantile process model
+proc <- rq(cmx ~ Condition, tau = -1, data = data, method = "br")
+
+# Quartile model
+qreg <- rq(cmx ~ Condition, tau = 1:3/4, data = data, method = "br")
+summary(qreg, se = "rank")
+```
+
+```{r plot2, include=TRUE, cap.fig=""}
+figure2 <- t(proc$sol) %>%
+    as_tibble %>%
+    select(
+        tau,
+        zero  = `(Intercept)`,
+        coin  = `ConditionCoin Tossing`,
+        stock = `ConditionStock Market`
+    ) %>%
+    mutate(
+        "Coin Tossing" = zero + coin,
+        "Stock Market" = zero + stock,
+        "No Instruction" = zero
+    ) %>%
+    pivot_longer(-c(tau:stock), names_to = "Condition", values_to = "Qbar") %>%
+    mutate(Condition = factor(Condition, levels = c("No Instruction", "Stock Market", "Coin Tossing"))) %>%
+    ggplot(aes(x = tau, y = Qbar, color = Condition, group = Condition)) +
+    geom_line() +
+    geom_vline(xintercept = .5, linetype = 2L) +
+    labs(x = "Quantile", y = "Normalized Alogorithmic Complexity")
+
+figure2
+
+figure2 %>% ggsave(filename = "figure_1.png",
+       device = "png",
+       dpi = 300,
+       height = 4.5,
+       width = 6)
+```
+
+```{r h2_test}
+c(
+    list(Faculty = data),
+    split(data, data$Condition)
+)%>%
+    map2(names(.), ~{
+        mutate(tidy(wilcox.test(cmx ~ Faculty, data = .x, exact = FALSE)), condition = .y, .before = 1L)
+    }) %>%
+    bind_rows %>%
+    select(
+        Condition = condition,
+        W = statistic,
+        p = p.value
+    )
+```
+
+To test the hypothesis that students with more mathematical experience will produce series more complex than others we compared distributions of algorithmic complexity in groups of chemistry and psychology students. The Wilcoxon Rank Sum Test revealed that the main difference was not siginificant, $W = 4191.5,\ p=.9866$. The further analysis within experimental conditions also did not yield significant differences in distributions of algorithmic complexity between faculties (No Instruction Condition, $W = 451.5,\ p = .8083$; Stock Market Condition, $W = 531,\ .3447$; Coin Tossing Condition, $W = 422,\ p = .3184$). Although this result suggests that the mathematical experience does not affect the overall algorithmic complexity of produced series we would argue that this conclusion needs further examination. In this study, we interfered with mathematical experience based on the field of studies. Therefore, we did not control for the actual mathematical experience but based our assumption on the number of classes students have taken over the course of their academic career.
 
 ```{r model8}
-## Model Selection
-model8 <- lme(log(cmx_w) ~ 1 + idx + Condition + Faculty + idx:Faculty + idx:Condition,
-             random = ~1|id,
-             correlation  = corARMA(form = ~idx|id, p = 1),
-             data = seq8)
-summary(model8)
-r.squaredGLMM(model8)
-d_cohen(model8)
+lmm0 <- lmer(log(cmx_w) ~  idx + Faculty * Condition + (1 | id), data = seq8)
+
+lmm1 <- lmer(
+    formula = log(cmx_w) ~ Condition + idx + Faculty +
+        (0 + dummy(Condition, "No Instruction") | id) +
+        (0 + dummy(Condition, "Coin Tossing") | id) +
+        (0 + dummy(Condition, "Stock Market") | id),
+    data = seq8)
+
+summary(lmm1)
+
+compare <- emmeans(lmm1, "Condition", lmerTest.limit = 53164) %>%
+    pairs(rev = TRUE, adjust = "holm")
+
+compare
+r.squaredGLMM(lmm1)
+
+prof <- profile(lmm1, which = c("theta_"), signames = FALSE)
+(ci <- confint(prof))
+
+anova(lmm0, lmm1)
 ```
 
-In a more detailed analysis, we used the rolling algorithmic complexity. We performed the linear mixed-effects model to test following hypotheses: H3) the algorithmic complexity decreases over time, H3a) the task description moderates the effect of time on algorithmic complexity of the series, and, H3b) the mathematical experience moderates the effect of time on algorithmic complexity of the series. We present herein analysis for a sliding window of length 8 only. That is because this model fitted the data the best. The specification of the rest of the models is in Supplementary Materials together with a replicable R script. The dependent variable (the algorithmic complexity) in the models was logged so back-transformed model predictions were bounded to be non-negative since there is no notion of negative randomness / algorithmic complexity. In all models as fixed effects we entered the time step, the task description condition (with No Instruction Condition as a reference level in dummy coding), the mathematical experience condition (with Chemistry as a reference level in dummy coding) and interaction terms between the time step and the task description condition, and between the time step and the mathematical experience condition. Goodness-of-fit of the models were assessed with marginal \(R^2\) (variance retained by fixed effects only) and conditional \(R^2\) (variance retained by the model as such).
+In a more detailed analysis, we used the rolling algorithmic complexity. We performed the linear mixed-effects model to test the third hypothesis that the algorithmic complexity decreases over time. We present herein analysis for a sliding window of length 8 only. That is because this model fitted the data the best. The specification of the rest of the models is in Supplementary Materials together with a replicable R script. The dependent variable (the algorithmic complexity) in the models was logged so back-transformed model predictions were bounded to be non-negative since there is no notion of negative randomness / algorithmic complexity. In all models as fixed effects we had the time step, the task description condition (with No Instruction Condition as a reference level in dummy coding), the mathematical experience condition (with Chemistry as a reference level in dummy coding) and interaction terms between the time step and the task description condition, and between the time step and the mathematical experience condition. Goodness-of-fit of the models were assessed with marginal \(R^2\) (variance retained by fixed effects only) and conditional \(R^2\) (variance retained by the model as such).
 
-In the model with the sliding window of length 8 as a random effect, we had an intercept for subjects. The fitted model indicated several significant effects. There was a significant negative effect of the time step on the algorithmic complexity, \(t(52977) = 2.65,\ d = .006,\ p = .008\). With each time step, the algorithmic complexity decreased by \(.004\%\ \pm.001\) (see Figure 3. which presents this trend). This result supported the third hypothesis regarding the observed decline in the algorithmic complexity over time. However, hypotheses 3a and 3b were not supported. Neither the task definition nor the level of mathematical experience moderated the effect of time step on the algorithmic complexity (the detailed results are presented in Table 1.). However, similarly to the overall algorithmic complexity, there were significant differences between task definition conditions. The algorithmic complexity in the Coin Tossing Condition was \(2.18\%\ \pm.74\) higher than in the No Instruction Condition, \(t(179) = 2.96,\ d = .38,\ p = .004\). Similarly, in the Stock Market condition, the algorithmic complexity was higher \(1.94\%\ \pm.74\) than in the No Instruction Condition, \(t(179) = 2.62,\ d = .36,\ p = .01\).
+In the model with the sliding window of length 8 as a random effects, we had an intercept for subjects as well as by-subject random slopes for task description conditions. The fitted model indicated several significant effects. There was a significant negative effect of the time step on the algorithmic complexity, \(t(52978) = -21.98,\ d = .006,\ p < .01\). With each time step, the algorithmic complexity decreased by \(.004\%\ \pm.0002\). This result supported the third hypothesis regarding the observed decline in the algorithmic complexity over time. Additionaly, similarly to the overall algorithmic complexity, there were significant differences between task definition conditions but not between the levels of mathematical experience. The algorithmic complexity in the Coin Tossing Condition was \(2.05\%\ \pm.8\) higher than in the No Instruction Condition, \(t(106) = 2.68,\ d = .38,\ p = .02\). Similarly, in the Stock Market condition, the algorithmic complexity was higher \(1.69\%\ \pm.74\) than in the No Instruction Condition, \(t(179) = 2.51,\ d = .36,\ p = .04\). Although listed fixed effects were statistically significant they explained only $2.85\%$ of the variance while random effects retained $46.82\%$ of the variance. The closer examination revealed that the model with intercept for subjects as well as by-subject random slopes for task description conditions better fitted the data than the model with only random intercept for subjects, $\chi^2= 10.5, p < .001$. Therefore, in-between people variance was the function of the task description condition. The profiled confidence intervals of standard deviation in all three experimental conditions ploted in Figure 4. shows that in No Instruction condition in-between people variance was the highest. This result is in line with quantile regression results. The reason why people perform better in the Coin Tossing Condition and the Stock Market Condition than in the No Instruction Condition lies in the fact that they do not produce series of low complexity.
 
-```{r plot2, include = TRUE, fig.cap = "The decline of the rolling algorithmic complexity over the time step. The grey line depicts the empirical change, while the black line shows value predicted by the model with the (95%) Confidence Interval."}
-figure2 <- seq8 %>%
-  ungroup() %>%
-  mutate(predict = predict(model8),
-         ymin = predict - 1.96*predict(model8, se.fit = TRUE, level = 0)$se.fit,
-         ymax = predict + 1.96*predict(model8, se.fit = TRUE, level = 0)$se.fit) %>%
-  group_by(idx) %>%
-  summarise(predict = mean(predict),
-            ymin = mean(ymin),
-            ymax = mean(ymax),
-            cmx = mean(log(cmx_w))) %>%
-  ggplot(aes(x = (idx), y = predict)) +
-  geom_smooth(aes(ymin = ymin, ymax=ymax), stat = 'identity', inherit.aes = TRUE, color = 'black', size = .5) +
-  geom_line(aes(x = (idx), y = cmx), alpha = .2, color = 'black') +
-  labs(title = "",
-       x = "Time step",
-       y = "Logarithm of the Algorithmic Complexity")
-figure2
-#figure2 %>%
-#  ggsave(filename = "figure_2.png",
-#       device = "png",
-#       dpi = 300,
-#       height = 4.5,
-#       width = 6)
+```{r plot3, include = TRUE, fig.cap = "The decline of the rolling algorithmic complexity over the time step. The grey line depicts the empirical change, while the black line shows value predicted by the model with the (95%) Confidence Interval."}
+eff <- tibble(
+    effect = fct_inorder(c("No Instruction", "Coin Tossing", "Stock Market", "Residuals")),
+    sd = as.data.frame(VarCorr(lmm1))$sdcor,
+    lo = ci[, 1],
+    hi = ci[, 2]
+)
+
+figure3 <- eff %>%
+    mutate(effect = factor(effect, levels = c( "No Instruction", "Stock Market", "Coin Tossing", "Residuals"))) %>%
+    ggplot(aes(x = effect, y = sd, color = effect)) +
+    geom_segment(aes(xend = effect, y = lo, yend = hi), alpha = .5, size = 2, show.legend = FALSE) +
+    geom_point(shape = 21L, fill = "white", size = 3, show.legend = FALSE) +
+    labs(x = "", y = "Standard deviation", color = "")
+figure3
+figure3 %>%
+  ggsave(filename = "figure_3.png",
+       device = "png",
+       dpi = 300,
+       height = 4.5,
+       width = 6)
 ```
 
 ```{r table1}
