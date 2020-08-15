@@ -37,7 +37,7 @@ library(lme4)           # efficient linear mixed models with block matrix struct
 library(lmerTest)       # testing utilities for lme4 models
 library(emmeans)        # estimated marginal means and general contrasts
 library(MuMIn)          # implements R2 for (G)LMMs
-library(ggpubr)         # ggplot extensions
+library(ggsignif)       # For comparison tests' brackets
 
 ## GGPlot aesthetics
 theme_set(theme_classic())
@@ -233,6 +233,16 @@ Wartość uogólnionego $R^2$ wskazuje na raczej niewielką siłę efektu manipu
 (brzegowe $R^2$ około $2.8\%$) i jednocześnie znaczny poziom zróżnicowania międzyosobowego
 (warunkowe $R^2$ około $45.8\%$).
 
+```{r cmx_individual_differences_gamm}
+# frm <- ~
+#     (0 + dummy(Condition, "zero") | idx) +
+#     (0 + dummy(Condition, "coin") | idx) +
+#     (0 + dummy(Condition, "stock") | idx)
+# 
+# gam0 <- gamm4(cmx_w ~ Condition + s(t), random = ~ (1 | idx), data = df)
+# gam1 <- gamm4(cmx_w ~ Condition + s(t), random = frm, data = df)
+```
+
 ```{r cmx_individual_differences_gaussian}
 lmm0 <- lmer(cmx_w ~ Condition + t + (1 | idx), data = df)
 
@@ -288,19 +298,46 @@ Ostatecznie widzimy więc, że:
    ciągi o conajmniej umiarkowanym poziomie złożoności. Jednocześnie nie ma istotnego wpływu na efektywność
    generowania ciągów wysoce złożonych.
 
+Poniżej przedstawiona jest analiza dewiancji sprawdzająca, czy model przyzwalający na różne wariancje efektów losowych
+w grupach `zero` i `coin` jest lepszy od modelu, który na to nie pozwala
+(efektywnie jest to test istotności róznicy między wariancjami w grupach `zero` i `coin`).
+Widzimy, że wariancje w grupach różnią się (por. wykres poniżej).
+
+```{r cmx_individual_differences_zero_vs_coin}
+lmm_zero_coin0 <- lmer(
+    formula = cmx_w ~ Condition + t +
+        (0 + I(dummy(Condition, "zero") + dummy(Condition, "coin")) | idx) +
+        (0 + dummy(Condition, "stock") | idx),
+    data = df, 
+    REML = FALSE
+)
+lmm_zero_coin1 <- lmer(
+    formula = cmx_w ~ Condition + t +
+        (0 + dummy(Condition, "zero") | idx) +
+        (0 + dummy(Condition, "coin") | idx) +
+        (0 + dummy(Condition, "stock") | idx),
+    data = df,
+    REML = FALSE
+)
+
+(aov_zero_coin <- anova(lmm_zero_coin0, lmm_zero_coin1))
+```
+
 ```{r cmx_individual_differences_random_effects_plot}
 eff <- tibble(
     effect = fct_inorder(c("zero", "coin", "stock", "residual")),
     sd = as.data.frame(VarCorr(lmm1))$sdcor,
     lo = ci[, 1],
     hi = ci[, 2]
-)
+) %>%
+    mutate(effect = fct_relevel(fct_reorder(effect, sd), "residual", after = 3L)) 
 
 eff %>%
-    mutate(effect = fct_relevel(fct_reorder(effect, sd), "residual", after = 3L)) %>%
     ggplot(aes(x = effect, y = sd, color = effect)) +
     geom_segment(aes(xend = effect, y = lo, yend = hi), alpha = .5, size = 2) +
     geom_point(shape = 21L, fill = "white", size = 3) +
+    geom_signif(comparisons = list(c("zero", "coin")), color = "gray40", linetype = 2L,
+                annotation = str_glue("p = 0.0192"), tip_length = c(.4, 0.02)) +
     labs(x = "", y = "Standard deviation", color = "")
 ```
 
@@ -323,6 +360,7 @@ plt2 <- dat %>%
 
 plt1 | plt2
 ```
+
 Rozkłady efektów losowych są trochę brzydsze, ale pamiętajmy o tym, że w tym przypadku normalność nie jest tak ważna.
 Większość typowych modeli mieszanych jest bardzo odporna na nieekstremalne przypadki złamania tego założenia
 (https://arxiv.org/pdf/1201.1980.pdf).
