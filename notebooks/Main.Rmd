@@ -1,21 +1,28 @@
 ---
-title: "XXX"
+title: "The effect of context and individual differences in human-generated randomness"
 description: |
-    Method section.
-author:
-  - name: Mikołaj Biesaga and Szymon Talaga
-    affiliation: The Robert Zajonc Institute for Social Studies
-    affiliation_url: www.iss.uw.edu.pl/en/
-output: 
-    pdf_document: 
-      keep_tex: yes
+  Method section.
+output:
+  bookdown::html_document2:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    number_sections: no
+bibliography: literature.bib
+csl: apa-single-spaced.csl
 ---
+## Method
 
-\section{Method}
+Our goal was to test four hypotheses in two studies. In Study 1 we tested
+hypotheses regarding the effect of task description (H1) and mathematical
+experience (H2) on the algorithmic complexity of human-generated series.
+Additionally, in all experimental conditions, we investigated the dynamics of
+the randomness of human-generated series to test the potential effect of fatigue
+(H3). In Study 2, we further examined the dynamics of randomness in
+human-generated series (H3) and the relationship between algorithmic complexity
+of human-generated series with the Need for Cognition (H4).
 
-Our goal was to investigate described above hypothesis in two studies. In study 1., in experimental design, we tested hypotheses regarding the effect of task description (H1) and mathematical experience (H2) on the algorithmic complexity of human-generated series. Additionally, we investigated the dynamic of the randomness of human-generated series over time (H3). In study 2, we further examined the dynamic of randomness in human-generated series (H3) and the relationship between the algorithmic complexity of human-generated series with the need for cognition (H4).
-
-```{r setup_env, include=FALSE}
+```{r setup-env, include=FALSE}
 # Globals
 ROOT <- here::here()
 HERE <- file.path(ROOT, "notebooks")
@@ -26,8 +33,7 @@ knitr::opts_chunk$set(echo = FALSE,
                       include = FALSE,
                       message = FALSE,
                       warning = FALSE,
-                      fig.width = 8,
-                      fig.asp = 1,
+                      fig.height = 5,
                       fig.path = file.path(ROOT, "png"))
 ```
 
@@ -45,6 +51,7 @@ library(quantreg)
 library(emmeans)
 library(mgcv)
 library(itsadug)
+
 ## Set ggplot theme
 theme_set(theme_classic())
 COLORS <- RColorBrewer::brewer.pal(8, "Set1")
@@ -54,51 +61,117 @@ options(
 )
 ```
 
-\subsection{Study 1}
+## Study 1.
 
-In the first study, participants were tested individually in sessions that lasted about 15 minutes. They were simply asked to produce a 300 elements binary series. We gathered the responses from the participants using a specially designed computer tool\footnote{It is available on GitHub under MIT License \url{https://github.com/MikoBie/Survey}.}.
+In the first study, participants were tested individually in sessions that
+lasted about 15 minutes. They were simply asked to produce a binary series of
+300 elements. We gathered the responses from the participants using a custom
+software^[It is available on GitHub under MIT License https://github.com/MikoBie/Survey.].
 
-```{r load_study1_data}
+```{r load-study1-data}
+## Load Study 1 data for general analysis
 data <- read.csv2(file.path(DATA, "Study1.csv")) %>%
    mutate(Condition = factor(Condition, levels = c( "No Instruction", "Stock Market", "Coin Tossing")))
 
+## Load Study 1 data form in-depth analysis
 seq8 <- read.csv2(file.path(DATA, "Study1_seq8.csv")) %>%
   mutate(Condition = fct_relevel(as.factor(Condition), "No Instruction"))
 ``` 
 
-\subsubsection{Procedure and Design}
+### Procedure and Design
 
-The experiment followed a 2 x 3 factorial design, including two between-subjects variables: the mathematical experience and the task description condition. We recruited as participants two groups of students who either studied Psychology or Chemistry at the University of Warsaw. We assumed that students who chose as their major Psychology had a relatively small experience with concepts like randomness while students from the Chemistry Department were more familiar with it. We based our assumption on the number of obligatory courses students had to take in both departments. For Chemistry it was nearly 200 hours of subjects like Math, Physics, and Statistics during the first three years, while for Psychology it was just 90 hours of Statistics for five years. In both groups, participants were at random assigned to one of three experimental conditions: 1) the No Instruction Condition, 2) the Coin Tossing Condition, and 3) the Stock Market Condition. In all three conditions, we used a specially designed computer tool. It displayed every two seconds a red square. In the No Instruction Condition participants were simply asked to press in random order one of the two specially marked keys whenever they see a red square. In the Coin Tossing Condition, participants were instructed to imagine tossing a fair coin whenever they see a red square and press either key marked as tail or head. In the Stock Market Condition, participants were asked to imagine a stock market chart and to assume that price fluctuation is generated by a random process. They were instructed to try to predict whether the price in the next time step will go up or down and to press either key marked as an arrow up or down.
+The experiment followed a 2 x 3 factorial design with two between-subjects
+factors: the mathematical experience and the task description. Participants
+were two groups of students recruited either from the Psychology or Chemistry
+faculties at the University of Warsaw. We assumed that students who chose as
+their major psychology had a relatively small exposure to concepts related to
+randomness while students from the Faculty of Chemistry were more familiar
+with them due to their generally better quantitative training. We based this
+assumption on the number of obligatory courses students had to take in both
+programs. For chemistry students, it was nearly 200 hours of classes related
+to math, physics, and statistics during the first three years, while for
+psychology it was just 90 hours of applied statistics over five years. In
+both groups, participants were assigned randomly to one of the three
+experimental conditions: 1) No Instruction (NI); 2) Coin Tossing Instruction
+(CTI); and 3) Stock Market Instruction (SMI). In all three conditions, we
+used custom software to run the experiment. Every 1.25 second it displayed a
+red square for .75 second. Furthermore, in the No Instruction condition
+participants were simply asked to select randomly and press one of the two
+predefined keys every time they saw the red square. In the Coin Tossing
+condition, participants were instructed to imagine a toss of a fair coin
+whenever they saw the red square and press either key marked as tails or
+heads. In the Stock Market condition, participants were asked to imagine a
+stock market chart and to assume that price fluctuations were random. They
+were instructed to try to predict whether the price in the next time step
+will go up or down and to press either key marked "up" or
+"down".
 
-\subsubsection{Participants}
+### Participants
 
-The participants were students from the Psychology Department and the Chemistry Department at the University of Warsaw. A total of \(183\) subjects (\(129\ females\)), aged from 18 to 30 (\(M = 21.54,\ SD = 2.12\)), were randomly assigned to one of the experimental conditions. The procedure was approved by the ethics committee of the Robert Zajonc Institute for Social Studies at the University of Warsaw. All participants gave informed consent before taking part in the study.
+The participants were students from the Faculty of Psychology and
+Faculty of Chemistry at the University of Warsaw.
+A total of (183) subjects (129 females),
+aged from 18 to 30 (\(M = 21.54,\ SD = 2.12\)), were randomly assigned to one
+of the experimental conditions. The procedure was approved by the ethics
+committee of the Robert Zajonc Institute for Social Studies at the University
+of Warsaw. All participants gave informed consent before taking part in the
+study.
 
-\subsubsection{Data manipulation}
+### Data processing
 
-Although the participants were instructed to only press relevant keys when they saw a red square some people pressed it more often and others less frequently than 300 times. Therefore, the length of the series varied between subjects from 218 to 1016 elements (\(Median = 300\)). However, there were only a few people who produced significantly longer series than others. Therefore, we cut off observations exceeding the typical length of the series, i.e.~we cut off the last 10\% of observations (with indexes longer than 313).
+Although the participants were instructed to only press relevant keys when
+they saw the red square some pressed it more and some less than 300 times.
+Therefore, the length of the series varied between subjects from 218 to 1016
+elements (\(Median = 300\)). However, there were only a few people who
+produced significantly longer series than others. Therefore, we cut off
+observations exceeding the typical length of the series, i.e. we cut off the
+last 10\% of observations (those with more than 313 elements).
 
-We used ''pybdm'' library in Python to compute the algorithmic complexity of each series\footnote{It is available on GitHub under MIT License \url{https://github.com/sztal/pybdm}.}. It is an implementation of the Block Decomposition Method which allows extending the power of the Coding Theorem Method on longer strings [@zenil2018].
+We used "pybdm"^[It is a Python package implementing Coding
+Theorem and Block Decomposition methods for estimating algorithmic complexity
+[@soler-toscano2014; @zenil_decomposition_2018]. It is available as a
+standard package through PyPI https://pypi.org/project/pybdm/}.] library
+to estimate algorithmic complexity of series. All other analyses were
+performed using R language [@rcore] with "nlme" and
+"lme4" packages for estimating linear mixed models
+[@bates_fitting_2015; @nlme] and "quantreg" package for fitting
+quantile regression [@koenker_quantreg_2020].
 
-For each participant, we computed the overall value of the series algorithmic complexity and the rolling algorithmic complexity. The former was normalized because even though we cut off 10\% of the longest indexes, the length of series still varied. Normalization of the algorithmic complexity allowed us to compare series of different lengths. The rolling algorithmic complexity was based on the computation of algorithmic complexity for a sliding window of length from 5 to 9. That is because the length of the working memory capacity is \(7\ \pm 2\) chunks of information [@baddeley1986]. Herein, we present the analysis only for the sliding window of length 8, but other analyses with reproducible R code might be found in Supplementary Materials.
+For each participant, we computed an overall algorithmic complexity of the
+entire sequence as well as vectors of complexity estimates in rolling windows
+of different lengths. The former was normalized (using the method described
+in \citealp{zenil_decomposition_2018]) because even though we cut off the
+last 10\% of the longest series the lengths still varied. Normalized
+algorithmic complexity ranges from $0$ to $1$ where $0$ stands for the
+simplest possible object and $1$ for the most complex object of a given size.
+The rolling algorithmic complexity was calculated for window lengths from 5
+to 9. This corresponds to the estimated capacity of the working memory which
+is usually said to be \(7\ \pm 2\) elements [@baddeley1986]. Herein, we
+present the results only for the window of length 8. The rest can be found in
+Supplementary Materials.
 
-\subsubsection{Results}
+### Results
 
-Before conducting a more detailed analysis, we tested hypotheses regarding the effect of the task description (H1) and mathematical experience (H2) on the overall algorithmic complexity of human-generated series. For testing these hypotheses we used non-parametric tests to assess whether the distributions of algorithmic complexity were systematically different between groups of observations.
+Before conducting a more detailed analysis, we tested hypotheses regarding
+the effect of the task description (H1) and mathematical experience (H2) on
+the overall algorithmic complexity of human-generated series. For testing
+these hypotheses we used non-parametric tests to assess whether the
+distributions of algorithmic complexity were systematically different between
+groups of observations.
 
-```{r kurskal_condition}
-kruskal.test(cmx ~ Condition, data = data)
+```{r kurskal-condition}
+kruskal.test(cmx~Condition, data = data)
 ```
 ```{r quantreg_condition}
 # Full quantile process model
-proc <- rq(cmx ~ Condition, tau = -1, data = data, method = "br")
+proc <- rq(cmx~Condition, tau = -1, data = data, method = "br")
 
 # Quartile model
-qreg <- rq(cmx ~ Condition, tau = 1:3/4, data = data, method = "br")
+qreg <- rq(cmx~Condition, tau = 1:3/4, data = data, method = "br")
 summary(qreg, se = "rank")
 ```
 
-```{r plot2, include = TRUE, fig.cap = "Left panel: Histograms of Normalized Algorithmic Complexity in all three conditions. Right panel: The distributions of the normalized Algorithmic Complexity of series across quantiles. In the first quantile ($\tau = .25$), the distribution of the normalized algorithmic complexity of series in the No Instruction Condition was different than in the Stock Market Condition ($95\%\ CI [0.0868\ 0.4576]$) and in the Coin Tossing Condition ($95\%\ CI [0.0851\ 0.4079]$). In the second quantile ($\tau = .5$), the distribution difference was only significant between the No Instruction Condition and the Coin Tossing Condition, $95\%\ CI [0.0118\ 0.872]$. There were no significant differences in distributions between task description conditions in the third and fourth quantiles."}
+```{r plot2, include = TRUE, fig.cap = "Left panel: Distributions of normalized algorithmic complexity in the experimental groups. Right panel: The distributions of the normalized algorithmic complexity of series across quantiles. In the first quartile, the distribution of normalized algorithmic complexity of series in NI condition was different than in SMI ($95%\ CI\ [.0868\ .4576]$) and CTI conditions ($95%\ CI\ [.0851\ .4079]$). In the second quartile, the distribution difference was only significant between the NI and CTI conditions, $95%\ CI\ [.0118\ .872]$. There were no significant differences between the distributions in the groups in the case of the third quartile."}
 plt1 <- data %>%
     ggplot(aes(x = cmx, fill = Condition)) +
     geom_histogram(bins = 10, color = "white") +
@@ -137,15 +210,42 @@ figure2 %>% ggsave(filename = file.path(FIG,"figure_2.png"),
        width = 10)
 ```
 
-The Kruskal-Wallis Rank Sum Test revealed a significant difference between distributions of algorithmic complexity in task description's experimental conditions, $\chi^2(2) = 7.0051, p < .0301$. The closer visual examination of the histograms revealed that the main variation between distributions is observed between their left tails (compare left panel of Figure 2.). In the No Instruction condition, the frequency of the lowest results is relatively higher than in the Coin Tossing and the Stock Market conditions. Therefore, to better understand this effect, we performed quantile regression across quantiles of the distributions. As the dependent variable we entered normalized algorithmic complexity and as the fixed effect the task description condition (with No Instruction Condition as a reference level in dummy coding). The analysis revealed that in the first quantile ($\tau = .25$) there was a significant difference in distributions between the Stock Market Condition and the No Instruction Condition, $95\%\ CI\ [0.0868\ 0.4576]$ and the Coin Tossing Condition and the No Instruction Condition, $95\%\ CI\ [0.0851\ 0.4079]$. In the second quantile ($\tau = .5$), there was a significant difference in distributions between the Coin Tossing Condition and the No Instruction Condition only, $95\%\ CI\ [0.0118\ 0.872]$. There were no significant differences in distributions in the third and fourth quantiles (compare right panel of Figure 2.). These results indicate that both the Stock Market and Coin Tossing conditions prevent people from producing series of low algorithmic complexity. The differences in the task description conditions seem not to affect the distributions in their higher ends, therefore they do not facilitate producing more complex series as many researchers believed \citep[compare]{ayton1991].
+The non-parametric Kruskal-Wallis Test revealed a significant difference
+between distributions of algorithmic complexity in task description
+conditions, $\chi^2(2) = 7.0051, p = .0301$. The closer visual examination of
+the histograms revealed that the main difference between distributions was in
+their left tails (see the left panel of Figure \@ref(fig:plot2)). In the NI
+condition, the frequency of the lowest results is relatively higher than in
+the CTI and SMI conditions. Therefore, to better understand this effect, we
+used quantile regression [@koenker_quantile_2001] to estimate the full
+quantile process in the three experimental groups as well as calculate $95\%$
+confidence intervals for the first, second, and third quartiles. As
+Figure \@ref(fig:plot2) shows, there is a clear gap between low quantiles
+(left tail) in the No Instruction condition compared to other conditions.
+Furthermore, confidence intervals showed that there are significant
+differences in terms of 1st quartiles between the NI condition and both SMI,
+$95\%\ CI\ [.0868\ .4576]$, and CTI conditions, $95\%\ CI\ [.0851\
+.4079]$. In the case of the second quartile, a significant difference was
+observed only between the CTI and NI conditions, $95\%\ CI\ [.0118\ .872]$.
+No significant differences were observed in the case of the third quartile.
+These results confirm that the gap visible in Figure \@ref(fig:plot2) is
+statistically significant. This indicates that both the Stock Market and Coin
+Tossing conditions prevented participants from producing series of low
+algorithmic complexity. The differences in the task description conditions
+seem not to affect the upper parts of the distributions (roughly above
+median). Thus, the results suggest that the task description do not enhance
+the ability to generate random-like sequences, as many researchers believed
+e.g. [@ayton1991], but rather helps to activate it whatsoever,
+resulting in significantly less trivially non-random sequences being
+produced.
 
 
-```{r wilcox_faculty}
+```{r wilcox-faculty}
 c(
     list(Faculty = data),
     split(data, data$Condition)
 )%>%
-    map2(names(.), ~{
+    map2(names(.), ~ {
         mutate(tidy(wilcox.test(cmx ~ Faculty, data = .x, exact = FALSE)), condition = .y, .before = 1L)
     }) %>%
     bind_rows %>%
@@ -156,10 +256,23 @@ c(
     )
 ```
 
-To test the second hypothesis that students with more mathematical experience will produce series more complex than others we compared distributions of algorithmic complexity in groups of chemistry and psychology students. The Wilcoxon Rank Sum Test revealed that the main difference was not siginificant, $W = 4191.5,\ p=.9866$. The further analysis within experimental conditions also did not yield significant differences in distributions of algorithmic complexity between faculties (No Instruction Condition, $W = 451.5,\ p = .8083$; Stock Market Condition, $W = 531,\ .3447$; Coin Tossing Condition, $W = 422,\ p = .3184$). Although this result suggests that the mathematical experience does not affect the overall algorithmic complexity of produced series we would argue that this conclusion needs further examination. In this study, we interfered with mathematical experience based on the field of studies. Therefore, we did not control for the actual mathematical experience but based our assumption on the number of classes students have taken over the course of their academic career.
+To test the second hypothesis that students with more mathematical experience
+will produce series more complex than others we compared distributions of
+algorithmic complexity in groups of chemistry and psychology students. The
+Wilcoxon Rank Sum Test revealed that the main difference was not significant,
+$W = 4191.5,\ p=.9866$. The further analysis within experimental conditions
+also did not yield significant differences in distributions of algorithmic
+complexity between faculties (NI, $W = 451.5,\ p = .8083$; SMI, $W = 531,\
+.3447$; CTI, $W = 422,\ p = .3184$). Although this result suggests that the
+mathematical experience does not affect the overall algorithmic complexity of
+the produced series we argue that this conclusion needs further examination.
+In this study, we estimated mathematical experience based on a field of
+studies. Therefore, we did not control for the actual mathematical experience
+but used the number of classes students have taken throughout their academic
+career as a proxy.
 
-```{r model_seq8}
-lmm0 <- lmer(log(cmx_w) ~  idx + Faculty * Condition + (1 | id), data = seq8)
+```{r model-seq8}
+lmm0 <- lmer(log(cmx_w) ~ idx + Faculty * Condition + (1 | id), data = seq8)
 
 lmm1 <- lmer(
     formula = log(cmx_w) ~ Condition + idx + Faculty +
@@ -183,14 +296,64 @@ prof <- profile(lmm1, which = c("theta_"), signames = FALSE)
 anova(lmm0, lmm1)
 ```
 
-In a more detailed analysis, we used the rolling algorithmic complexity. We performed the linear mixed-effects model to test the third hypothesis that the algorithmic complexity decreases over time. We present herein analysis for a sliding window of length 8 only. That is because this model fitted the data the best. The specification of the rest of the models is in Supplementary Materials together with a replicable R script. The dependent variable (the algorithmic complexity) in the models was logged so back-transformed model predictions were bounded to be non-negative since there is no notion of negative randomness / algorithmic complexity. In all models as fixed effects we had the time step, the task description condition (with No Instruction Condition as a reference level in dummy coding), and the mathematical experience condition (with Chemistry as a reference level in dummy coding). Goodness-of-fit of the models were assessed with marginal \(R^2\) (variance retained by fixed effects only) and conditional \(R^2\) (variance retained by the model as such).
+In a more detailed analysis, we used the rolling algorithmic complexity. We
+estimated a linear mixed-effects model to test the third hypothesis that
+algorithmic complexity decreases over time (i.e. effect of fatigue). We
+present herein analysis for a rolling window of length 8 only as this model
+attained the best goodness-of-fit. The specification of the rest of the
+models is in Supplementary Materials together with a reproducible R script.
+The dependent variable (algorithmic complexity) in the models was
+log-transformed so back-transformed model predictions were bounded to be
+non-negative since there is no notion of negative randomness / algorithmic
+complexity. All models included, as fixed effects, the following factors:
+time step, task description type (with NI condition used as the reference
+level), and mathematical experience (Chemistry students used as the reference
+level). Goodness-of-fit of the models was assessed with marginal \(R^2\)
+(variance retained by fixed effects only) and conditional \(R^2\) (variance
+retained by the model as such) as proposed by
+[@nakagawa_coefficient_2017].
 
-In the model with the sliding window of length 8 as random effects, we had an intercept for subjects as well as by-subject random slopes for task description conditions. The fitted model indicated several significant effects. There was a significant negative effect of the time step on the algorithmic complexity, \(t(52983.32) = -21.98,\ p < .01\). With each time step, the algorithmic complexity decreased by \(.004\%\ \pm.0002\). This result supported the third hypothesis regarding the observed decline in the algorithmic complexity over time. Additionaly, there were significant differences between task description conditions but not between the levels of mathematical experience (compare Table 1.). The algorithmic complexity in the Coin Tossing Condition was \(2.05\%\ \pm.8\) higher than in the No Instruction Condition, \(t(106.4) = 2.68,\ d = .399,\ p = .02\). Similarly, in the Stock Market condition, the algorithmic complexity was higher \(1.69\%\ \pm.74\) than in the No Instruction Condition, \(t(99.1) = 2.84,\ d = .313,\ p = .04\). Although listed fixed effects were statistically significant they explained only $2.83\%$ of the variance while random effects retained $46.82\%$ of the variance. The closer examination revealed that the model with intercept for subjects as well as by-subject random slopes for task description conditions better fitted the data than the model with only random intercept for subjects, $\chi^2(1)= 10.5, p < .001$. Therefore, in-between people variance was the function of the task description conditions. The profiled confidence intervals of standard deviation in all three experimental conditions, ploted in Figure 4., show that in No Instruction condition in-between people variance was significantly higher than in the Coin Tossing condition (the analysis of deviance of the model which included independent terms for the varaince in all three task description conditions against the model which included independent term for variance in Coin Tossing condition was significant .$\chi^2(1) =  12.021,\ p < .001$) and Stock Market condition (the analysis of deviance of the model which included independent terms for the varaince in all three task description conditions against the model which included independent term for variance in the Stock Market condition was significant $\chi^2(1) =  6.251,\ p = .0124$).  These results are in line with quantile regression results perfromed on the overall algorithmic complexity. The reason why people perform better in the Coin Tossing and Stock Market conditions than in the No Instruction Condition lies in the fact that in the former they produce series of smaller variability. The difference between the least and the most random series in these conditions is smaller than in the No Instruction Condition.
+In the rolling window model random intercepts and slopes for task description
+conditions were included (clustered by subjects). The model indicated several
+significant effects. There was a significant negative effect of the time step
+on the algorithmic complexity, \(t(52983.31) = -21.98,\ p < .01\). With each
+time step, the algorithmic complexity decreased by \(.004\%\ \pm .0002\).
+This result supports the third hypothesis regarding the observed decline in
+the algorithmic complexity over time. Additionally, there were significant
+differences between task description conditions but not between the levels of
+mathematical experience (see Table \@ref(tab:table1)). In SMI
+condition algorithmic complexity was higher, \(1.69\%\ \pm.74\), than in NI n
+condition, \(t(99.07) = 2.28,\ d = .313,\ p = .04\). Similarly, the
+algorithmic complexity in CTI condition was \(2.05\%\ \pm.8\) higher than in
+NI Condition, \(t(106.38) = 2.68,\ d = .399,\ p = .02\). Although most of the
+fixed effects were statistically significant they explained only $2.83\%$ of
+the variation while after including the random effects the fraction was
+$46.82\%$. The closer examination revealed that the model with
+subject-specific random intercepts and slopes (for task description
+conditions) fitted the data better than the model with random intercepts
+only, $\chi^2(1)= 10.5, p < .001$. Therefore, the between-subjects variance
+was the function of the task description conditions. The profiled confidence
+intervals of standard deviation in all three experimental conditions
+(cf. Figure \@ref(fig:plot3)) show that in NI condition
+between-subjects variance was significantly higher than in CTI (an analysis
+of deviance of the model which included independent terms for the variance in
+all three task description conditions against the model which included an
+independent term for variance CTI condition was significant, $\chi^2(1) =
+12.021,\ p < .001$) and SMI conditions (an analysis of deviance of the model
+which included independent terms for the variance in all three task
+description conditions against the model which included an independent term
+for variance in the Stock Market condition was significant $\chi^2(1) =
+6.251,\ p = .0124$). These outcomes are in line with the quantile regression
+results for the overall algorithmic complexity. The reason why people perform
+better in CTI and SMI conditions than in NI condition is the fact that in the
+former they can usually avoid trivial series with near-zero (normalized)
+complexity. Hence, on average, the difference between average complexity
+produced by two different people in these conditions is lower than in NI
+condition.
 
-
-```{r variance_test}
+```{r variance-test}
 lmm_zero_coin0 <- lmer(
-    formula = log(cmx_w) ~ Condition + id +
+    formula = log(cmx_w)~ Condition + id +
         (0 + I(dummy(Condition, "No Instruction") + dummy(Condition, "Coin Tossing")) | id) +
         (0 + dummy(Condition, "Stock Market") | id),
     data = seq8, 
@@ -218,7 +381,7 @@ lmm_zero <- lmer(
 (aov_zero_stock <- anova(lmm_zero_stock0, lmm_zero))
 
 ```
-```{r plot3, include = TRUE, fig.cap = "The standard deviation of the Algorithmic Complexity in the sliding window of length 8 in all three experimental conditions with $95\%$ Confidence Intervals (standard deviation of residuals serves as a reference). In the No Instruction Condition in-between people variance of the Algorithmic Complexity was higher than in the Stock Market Condition ($p = .012$) and in the Coin Tossing Condition ($p = .001$)."}
+```{r plot3, include = TRUE, fig.cap = "Estimated standard deviations (with $95%$ CI based on likelihood profiling) of the distributions of random intercepts in the rolling window model (with length 8) in the three experimental conditions. The standard deviation of the residual distribution serves as a reference point. In NI condition between-subjects variance of the algorithmic complexity was higher than in SMI ($p = .012$) and CTI conditions ($p = .001$)."}
 eff <- tibble(
     effect = fct_inorder(c("No Instruction", "Stock Market", "Coin Tossing", "Residuals")),
     sd = as.data.frame(VarCorr(lmm1))$sdcor,
@@ -248,7 +411,7 @@ figure3 %>%
        width = 6)
 ```
 
-```{r table1}
+```{r table1, include=TRUE}
 Predictors_names <- rownames(coef(summary(lmm1)))
 coef(summary(lmm1)) %>% 
   as.tibble() %>% 
@@ -259,74 +422,171 @@ coef(summary(lmm1)) %>%
          "df*"=df,
          "t-value" = 4,
          "p-value" = 5) %>%
-  kable(caption = "Model specification. The dependent variable (rolling algorithmic complexity of the sliding window of the length 8) was logged so back-transformed model predictions were bounded to be non-negative since there is no notion of negative randomness / algorithmic complexity.") %>%
+  kable(caption = "Estimated parameters of the rolling window model.") %>%
   footnote(general = 'Marginal R2 = 2.83%, Conditional R2=46.82% \\nStd. Deviation of the random individual effects s=.048, p<.001 \\n\\*Degrees of Freedom were adjusted with the Kenward-Roger Method')
 ```
 
-Altoghether, the results of Study 1. supported hypotheses one and three. The task description affected the randomness of human-generated series. People produced more random sequences when the instructions included examples of random processes (imagining tossing a fair coin or imagining a random fluctuation of the stock market chart) than when there was no instruction and participants were duly asked to produce random series. That was because in these conditions, unlike in the No Instruction condition, subjects avoided producing a series of low randomness, hence, the in-between people variance was smaller. Therefore, the examples of random processes in experimental conditions did not serve to produce more random series but inhibited producing ones of low algorithmic complexity. This conclusion might be counter intuitive for many researchers (compare [@ayton1991]) who believed that more relatable instructions facilitated producing series of high randomness. Additionally, Study 1., supported hypothesis three that randomness of the series decreases over time. The prolonged cognitive engagement in mundane and repetitive experimental tasks deteriorated subjects' performance in random series production. However, in this study we modeled this trend using linear estimation, which needs further examination because no notion of negative algorithmic complexity / randomness.
+Altogether, the results of Study 1 support H1 and H3. The task description
+affected the randomness of the human-generated series. Subjects produced more
+random sequences when the instructions included examples of random processes
+(tossing a fair coin or random fluctuations in a stock market chart) than
+when there was no instruction and participants were plainly asked to produce
+random series. The difference was mainly due to the fact that in these
+conditions, unlike the No Instruction condition, subjects were usually able
+to avoid producing trivial series of low randomness (e.g. composed of almost
+only of 1's or 0's), hence, the between-subjects variance of algorithmic
+complexity was smaller in these groups. However, we argue that our results,
+based on a detailed analysis of quantiles of the distributions in all
+experimental groups, provide more insight into the effects of task
+instruction in random sequence generation and show that important effects
+occur not on the level of averages/central tendencies but rather in lower
+tails of complexity distributions. Additionally, the results of Study 1
+support the third hypothesis that the randomness of the series decreases over
+time.
 
-\subsection{Study 2.}
+## Study 2.
 
-The aim of the second study was to further investigate the observed effect of fatigue on the random series production (H3) and to examine the relationship of the algorithmic complexity with the need for engaging cognitive resources in challenging tasks (H4). In Study 1., the results showed that the algorithmic complexity of the series decreased over time. This effect was caused by fatigue with a task requiring constant attention. Participants in almost 15 minutes-long procedure were asked to produce 300 elements series without any break. In Study 2., we wanted to investigate whether this effect would be also present in series of shorter independent tasks since many researchers [@kareev1995] argued that the reason behind people's inability to produce random-like series lies in the fact that subjects do not perceive each element as an independent. Therefore, in this study, participants were asked to produce 10 independent binary series and to complete Polish versions of the Need for Cognition Scale. Participants were recruited through the Polish Nationwide Opinion Poll Ariadna. It is a Polish Online Opinion Poll often used to conduct political surveys or scientific research. Depending on the declared length of the study users are gratified with points that they can exchange for prizes.
+The second study aimed to further investigate the observed effect of fatigue
+on the random series production (H3) and to examine the relationship of
+algorithmic complexity with the need for engaging cognitive resources in
+challenging tasks (H4). The results of Study 1 showed that the algorithmic
+complexity of human-generated series decreased over time. We argue that this
+effect was caused by fatigue due to the task requiring constant attention.
+Participants in an almost 15 minutes-long procedure were asked to produce 300
+elements series without any break. In Study 2, we investigated whether this
+effect would be also present in series of shorter independent tasks since
+many researchers argued that the reason behind people's inability to produce
+random-like series is the fact that subjects do not perceive each element as
+independent e.g. [@kareev1995]. Therefore, in this study,
+participants were asked to produce 10 independent binary series and to
+complete Polish versions of the Need for Cognition Scale
+[@matusz2011; @cacioppo1982]. Participants were recruited through a Polish
+nationwide opinion poll Ariadna. It is an online poll often used to conduct
+political surveys or scientific research. Depending on the declared length of
+a study users are gratified with points which they can exchange for prizes.
 
-```{r load_study2_data}
+```{r load-study2-data}
 data2 <- read.csv2(file.path(DATA, "Study2.csv")) %>%
-  mutate(warunek = as.factor(warunek),
-         IsHomogenous = if_else(warunek == "homogeneous", 0, 1),
+  #rename(Condition = warunek,
+  #       need_for_cognition = potrzeba_poznania) %>%
+  mutate(Condition = as.factor(Condition),
+         IsHomogenous = if_else(Condition == "homogeneous", 0, 1),
          id = as.factor(id))
 ```
 
-\subsubsection{Procedure and Design}
-
-The study followed an experimental design, including one two-level between-subjects variable. First, participants were at random assigned to either the homogeneous instruction condition or the heterogeneous instruction condition. In both conditions, similarly to study 1, participants saw a red square every two seconds in ten 12-displays series. In the homogeneous condition for each series, they were asked to imagine tossing a fair coin and report the result whenever they saw a red square. In the heterogeneous condition, their task altered every second series. In the odd series, they were asked to imagine tossing a fair coin and report the result whenever they saw a red square. In the even series, participants were asked to imagine a stock market chart and to assume that price fluctuation is generated by a random process. They were instructed to try to predict whether the prices will go up or down in the next time step and to report the outcome every time they saw a red square. After completing the procedure of generating random series participants in both conditions were asked to fill in Polish version of the Need for Cognition Scale.
-
-\subsubsection{Participants}
-
-The participants were recruited through the Polish Nationwide Opinion Poll Ariadna. A total number of 266 subjects agreed to take part in the study. However, due to the unrealistic (short or long) time of completion and unfinished surveys we excluded 80 participants. Therefore, finally we had a sample of 186 participants (\(134\ females\)), aged from 18 to 77 (\(M = 39.32,\ SD = 13.08\)). They were at random assigned to one of the experimental conditions. The procedure was approved by the ethics committee of the Robert Zajonc Institute for Social Studies at the University of Warsaw. All participants gave informed consent before taking part in the study.
-
-\subsubsection{Data manipulation}
-
-In online research, it is crucial to measure survey time and exclude participants who completed the task in unrealistic (short or long) time. In our case, we removed \(15\%\) of the shortest answers and 15\% of the longest responses. Although the participants were instructed to only press relevant keys when they saw a red square some people pressed it less frequently than 120 times (twelve ten elements long series). Therefore, the total number of the produced elements in all series varied between subjects from 100 to 120 elements (\(Median = 114\)).
-
-We used ''pybdm'' library in Python to compute the algorithmic complexity of each series\footnote{It is available on GitHub under MIT License \url{https://github.com/sztal/pybdm}.}. It is an implementation of the Block Decomposition Method which allows extending the power of the Coding Theorem Method on longer strings [@zenil2018].
+### Procedure and Design
 
 
-For each series produced by participants, we computed its algorithmic complexity. Therefore, each participant was represented by ten data points ordered in a time series. The algorithmic complexity of each series was normalized because although the instruction asked to produce 12 elements binary series the length varied. Normalization of the algorithmic complexity allowed us to compare a series of different lengths.
+We used an experimental design including one two-level between-subjects
+variable. First, participants were assigned at random to either a homogeneous
+instruction condition or a heterogeneous instruction condition. In both
+conditions, similarly to Study 1, they were presented with a red square every
+1.25 second for .75 second in ten 12 displays-long series. Thus, each subject
+was supposed to generate 10 sequences of 12 elements. In the homogeneous
+condition, in all series, participants were asked to imagine tossing of a fair
+coin and report the result whenever they saw the red square. In the
+heterogeneous condition, their task altered every second series. In the odd
+series, they were asked to imagine the tossing of a fair coin and report the
+result whenever they see the red square. In the even series, participants were
+asked to imagine a stock market chart and to assume that price fluctuations are
+generated by a random process. They were instructed to try to predict whether a
+price will go up or down in the next time step and to report the outcome every
+time they see the red square. After completing the procedure of generating
+random series participants in both conditions were asked to fill in the Polish
+version of the Need for Cognition Scale [@matusz2011; @cacioppo1982].
 
-```{r model_all}
-data2$warunekO <- as.ordered(data2$warunek)
-contrasts(data2$warunekO) <- "contr.treatment"
 
-bamm1 <- bam(cmx ~ potrzeba_poznania +
-               warunekO +
+### Participants
+
+A total number of 266 subjects agreed to take part in the study. However, due
+to the unrealistic (too short or too long) time of completion and unfinished
+surveys we excluded 80 participants. Therefore, finally, a sample of 186
+participants (134 females), aged from 18 to 77 (\(M = 39.32,\ SD = 13.08\)),
+was used. They were assigned at random to one of the experimental conditions.
+The procedure was approved by the ethics committee of the Robert Zajonc
+Institute for Social Studies at the University of Warsaw. All participants
+gave informed consent before taking part in the study.
+
+### Data processing
+
+In online research, it is crucial to measure survey time and exclude
+participants who completed the task in a suspiciously short or long amount of
+time. Therefore, we removed the top \(15\%\) of observations with the
+shortest response times and bottom \(15\%\) with the longest response times.
+Although the participants were instructed to only press relevant keys when
+they see a red square some people pressed it less frequently than 120 times
+(ten sequences of 12 elements). Therefore, the total number of produced
+elements in all series varied between subjects from 100 to 120 elements
+(\(Median = 114\)).
+
+Like in Study 1, we used ''pybdm'' library for Python to estimate the
+algorithmic complexity of generated series^[https://pypi.org/project/pybdm/l].
+The complexity of each sequence was estimated independently, so each participant
+was represented by ten data points ordered in a time series. The algorithmic
+complexity of each series was normalized because although the instruction
+asked to produce 12 elements binary series the lengths varied.
+
+```{r model-all}
+data2$Condition0 <- as.ordered(data2$Condition)
+contrasts(data2$Condition0) <- "contr.treatment"
+
+gamm1 <- gamm(cmx ~ need_for_cognition +
+               Condition0 +
                s(ids, bs = 'tp', k = 10) +
-               s(ids, by = warunekO, bs = 'tp', k = 10) +
-               s(id, bs = 're') +
-               s(ids, id, bs = 're'),
-             data = data2)
-summary(bamm1)
-gamm1 <- gamm(cmx ~ potrzeba_poznania +
-               warunekO +
-               s(ids, bs = 'tp', k = 10) +
-               s(ids, by = warunekO, bs = 'tp', k = 10),
-              random = list(id = ~ 1, id = ~ids),
+               s(ids, by = Condition0, bs = 'tp', k = 10),
+              random = list(id =~ 1, id =~ ids),
               data = data2)
 summary(gamm1$gam)
 summary(gamm1$lme)
 r.squaredGLMM(gamm1$lme)
 ```
-\subsubsection{Results}
+### Results
 
-In Study 1., we estimated the small negative trend of algorithmic complexity over time with the linear mixed models' approach. Although the model fitted the data and allowed to interfere about the effect of fatigue on algorithmic complexity it did not account for the fact that there is no notion of negative algorithmic complexity/randomness hence the trend curve must be bounded to zero. Therefore, to analyze the results of Study 2., we used a generalized additive mixed models approach which enabled modeling much more complex trend curves. Under two experimental conditions (heterogeneous and homogeneous conditions) we tested whether altering task descriptions in-between series would diminish the fatigue effect. As the dependent variable in the model, we had normalized algorithmic complexity. Normalization allowed to compare a series of different lengths because although the instruction asked to produce 12 elements binary series the length varied. As parametric effects, we entered the linear difference between trends of algorithmic complexity in homogenous and heterogenous conditions (with the homogeneous condition as the reference level in dummy coding) and the results of the Need for Cognition Scale. As nonparametric effects, we had a non-linear difference in trends of algorithmic complexity over time in-between homogenous and heterogeneous conditions (with the homogeneous condition as the reference level in dummy coding) and non-linear trend of algorithmic complexity over time. As random effects, we entered an intercept for subjects and random effect of slope for the series' number.Goodness-of-fit of the models were assessed with marginal \(R^2\) (variance retained by fixed effects only) and conditional \(R^2\) (variance retained by the model as such).
+In Study 1, using a linear mixed model we discovered a small negative trend
+(algorithmic complexity decreasing over time). Although the model fitted the
+data and allowed to examine the effect of fatigue it did not account for the
+fact that normalized complexity must remain bounded between 0 and 1.
+Therefore, in order to solve this problem in Study 2 we used a generalized
+additive mixed model (GAMM) which allows for a representation of more complex
+nonlinear trends. Under two experimental conditions (heterogeneous and
+homogeneous conditions) we tested whether altering task descriptions during
+experiment series would diminish the fatigue effect. The dependent variable
+was normalized algorithmic complexity of a currently generated series (10
+data points per subject). The mean difference between experimental conditions
+was represented with a single parametric effect with the homogeneous
+condition used as a reference group. The second parametric effect was a
+linear regression term corresponding to the effect of the Need for Cognition.
+For nonparametric effects, we had a non-linear difference in trends of
+algorithmic complexity over time between the homogenous and heterogeneous
+conditions (with the homogeneous condition being the reference level in dummy
+coding) and a non-linear trend of algorithmic complexity over time.
+Additionally, we used subject-level random intercepts and slopes for the time
+trend in order to model systematic between-subjects differences.
+Goodness-of-fit of the model were assessed with marginal \(R^2\) (variance
+retained by fixed effects only) and conditional \(R^2\) (variance retained by
+the model as such) [@nakagawa_coefficient_2017].
 
-The fitted model explained $50.7\%$ of the variance, while fixed effects $10.67\%$. The non-linear trend of algorithmic complexity over time was significant (compare Figure 4.), $F(edf=3.587, Ref.df=3.587) = 11.863, p < .0001$. The negative effect of time continued from series number one to series number five and afterward, the curve flattened at approximately the same level from series six to ten. However, neither linear ($t(180) = -1.69, p = .091$) nor non-linear ($F(edf = 1, Ref.df = 1) = 1.956, p = .162$) difference between homogenous and heterogeneous conditions were significant. The alternation of tasks description did not inhibit the effect of fatigue on the algorithmic complexity. Additionally, there was a small significant parametric effect of of Need for Cognition, ($t(180) = 2.66, p = .009$). With $.01$ point increase of normalized algorithmic complexity, there was $.2\ \pm.093$ point change of Need for Cognition scale results. This positive relationship between the randomness of series and the Need for Cognition scale results supported hypothesis four. Although the effect was negligible its direction suggests that people with a tendency to engage in intellectually challenging tasks perform better in the random-series generation tasks.
+The fitted model explained $50.7\%$ of the variance with fixed effects
+reproducing $10.67\%$. The non-linear trend of algorithmic complexity over
+time was significant (compare Figure \@ref(fig:plot4)),
+$F(edf=3.587, Ref.df=3.587) = 11.863, p < .0001$. The negative effect of time
+was approximately linear for the first five series and then the curve
+flattened and remained at approximately the same level for the rest of the
+series. However, neither linear ($t(180) = -1.69, p = .091$) nor non-linear
+($F(edf = 1, Ref.df = 1) = 1.956, p = .162$) differences between the
+homogenous and heterogeneous conditions were significant. The alternation of
+task description did not inhibit the effect of fatigue. Additionally, there
+was a small significant parametric effect of the Need for Cognition, ($t(180)
+= 2.66, p = .009$). With an average of $.01$ point increase on the Need for
+Cognition Scale, there was $.2\ \pm.093$ point change of the Algorithmic
+Complexity of the series. This positive relationship between the randomness
+of series and the Need for Cognition scale provided support for H4. People
+with a tendency to engage in intellectually challenging tasks performed
+better in random-series generation tasks.
 
-Although the hypothesis regarding the effect of task alternation on the negative trend of algorithmic complexity was not supported the effect of fatigue between series was non-linear. The observed trend of algorithmic complexity over time (compare Figure 4.) at its beginning was similar to the trend observed in Study 1. However, after series number five the curve flatters. That suggests that although the effect of fatigue has a negative influence it is bounded to 0.5 normalized Algorithmic Complexity. That is because although normalized Algorithmic Complexity varies from zero to one values below 0.5 became highly unlikely. Additionally, the observed correlations between the algorithmic complexity and the Need for Cognition Scale supported hypothesis four. It suggests that the ability to produce random series might be attributed not only to situational determinants (task description like in Study 1.) but also to cognitive motivation. However, the need for cognition is positively correlated with fluid intelligence. On one hand, it is easier to enjoy intellectually challenging tasks when there is a history of successfully resolved ones. On the other hand, engaging in challenging tasks increases the probability of success [@matusz2011}. Therefore, it seems that the intellectual determinants of the ability to produce random series (like fluid intelligence) might be moderated by cognitive motivation. It would explain why the observed effect of need for cognition is of negligible size.
-
-```{r plot4, include = TRUE, fig.cap = "The trend curve of the Normalized Algorithmic Complexity over series' number with 95\% confidence interval. For each series produced by participants, we computed its algorithmic complexity. Therefore, each participant was represented by ten data points ordered in a time series. The algorithmic complexity of each series was normalized because although the instruction asked to produce 12 elements binary series the length varied. Normalization of the algorithmic complexity allowed us to compare a series of different lengths."}
+```{r plot4, include = TRUE, fig.cap = "The trend curve for normalized algorithmic complexity for subsequent generated series with 95% confidence interval. For each series produced by participants, we estimated its algorithmic complexity. Therefore, each participant was represented by ten data points ordered in time sequences. The algorithmic complexity of each series was normalized because, even though the instruction asked to produce 12-elements binary sequences, the lengths varied."}
 data_plt4 <- get_predictions(gamm1$gam,
-                        cond = list(#warunekO = c("heterogeneous", "homogeneous"),
-                                    ids = seq(min(data2$ids),
+                        cond = list(ids = seq(min(data2$ids),
                                               max(data2$ids),
                                               length = 10)),
                         se = TRUE,
@@ -334,8 +594,8 @@ data_plt4 <- get_predictions(gamm1$gam,
 
 figure4 <- data_plt4 %>%
   ggplot(aes(x = ids, y = fit)) +
-  geom_line(aes(color = warunekO), show.legend = FALSE)  +
-  geom_ribbon(aes(ymin = fit-CI, ymax = fit + CI, group = warunekO), alpha = .1) +
+  geom_line(aes(color = Condition0), show.legend = FALSE)  +
+  geom_ribbon(aes(ymin = fit-CI, ymax = fit + CI, group = Condition0), alpha = .1) +
   scale_x_continuous(breaks=seq(0,10,1))+
   ylab("Normalized Algorithmic Complexity") +
   xlab("Series Number")
@@ -347,3 +607,12 @@ figure4 %>%
        height = 4.5,
        width = 6)
 ```
+## References
+
+<!-- CSS styling -->
+<style>
+    p {
+        text-align: justify;
+        height: 100%;
+    }
+</style>
