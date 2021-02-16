@@ -160,6 +160,7 @@ distributions of algorithmic complexity were systematically different between
 groups of observations.
 
 ```{r kurskal-condition}
+## Perform Kruskal-Wallis for experimental conditions
 kruskal.test(cmx~Condition, data = data)
 ```
 ```{r quantreg_condition}
@@ -172,6 +173,7 @@ summary(qreg, se = "rank")
 ```
 
 ```{r plot2, include = TRUE, fig.cap = "Left panel: Distributions of normalized algorithmic complexity in the experimental groups. Right panel: The distributions of the normalized algorithmic complexity of series across quantiles. In the first quartile, the distribution of normalized algorithmic complexity of series in NI condition was different than in SMI ($95%\ CI\ [.0868\ .4576]$) and CTI conditions ($95%\ CI\ [.0851\ .4079]$). In the second quartile, the distribution difference was only significant between the NI and CTI conditions, $95%\ CI\ [.0118\ .872]$. There were no significant differences between the distributions in the groups in the case of the third quartile."}
+## Create an object for the plot of the histogram of normalized algorithmic complexity for each experimental condition
 plt1 <- data %>%
     ggplot(aes(x = cmx, fill = Condition)) +
     geom_histogram(bins = 10, color = "white") +
@@ -179,6 +181,7 @@ plt1 <- data %>%
     labs(x = "Normalized Algorithmic Complexity", y = "Count") +
     guides(fill = FALSE)
 
+## Create an object for the plot of distribution of normalized algorithmic complexity for each experimental condition
 plt2 <- t(proc$sol) %>%
     as_tibble %>%
     select(
@@ -197,12 +200,15 @@ plt2 <- t(proc$sol) %>%
     ggplot(aes(x = tau, y = Qbar, color = Condition, group = Condition)) +
     geom_line(show.legend = FALSE) +
     geom_vline(xintercept = .5, linetype = 2L) +
-    labs(x = "Quantile", y = "Normalized Alogorithmic Complexity", color = "Conditions")
+    labs(x = "Quantile", y = "Normalized Algorithmic Complexity", color = "Conditions")
 
+## Arrange both plots as one figure
 figure2 <- ggarrange(plt1,plt2)
 
+## Plot the figure
 figure2
 
+## Write out the figure to the file
 figure2 %>% ggsave(filename = file.path(FIG,"figure_2.png"),
        device = "png",
        dpi = 300,
@@ -241,6 +247,7 @@ produced.
 
 
 ```{r wilcox-faculty}
+## Compute Wicoxon Rank Test between Chemistry and Psychology students
 c(
     list(Faculty = data),
     split(data, data$Condition)
@@ -272,8 +279,10 @@ but used the number of classes students have taken throughout their academic
 career as a proxy.
 
 ```{r model-seq8}
+## Define null linear mixed model for the rolling window of length 8
 lmm0 <- lmer(log(cmx_w) ~ idx + Faculty * Condition + (1 | id), data = seq8)
 
+## Define linear mixed model for the rolling window of length 8 with subject-specific random intercepts and slopes (for task description conditions)
 lmm1 <- lmer(
     formula = log(cmx_w) ~ Condition + idx + Faculty +
         (0 + dummy(Condition, "No Instruction") | id) +
@@ -281,18 +290,27 @@ lmm1 <- lmer(
         (0 + dummy(Condition, "Stock Market") | id),
     data = seq8)
 
+## Print out summary of the model
 summary(lmm1)
 
+## Compare results between experimental conditions
 compare <- emmeans(lmm1, "Condition", lmerTest.limit = 53164) %>%
     pairs(rev = TRUE, adjust = "holm")
 
+## Print out the results of comparison
 compare
+
+## Compute effect sizes
 eff_size(compare, edf = 179, sigma = sigma(lmm1))
+
+## Compute conditional and marginal coefficient of terminnation for mixed models
 r.squaredGLMM(lmm1)
 
+## Compute confidence intervals of standard deviation in all three experimental conditions
 prof <- profile(lmm1, which = c("theta_"), signames = FALSE)
 (ci <- confint(prof))
 
+## Compare null model with model with subject-specific random intercepts and slopes (for task description conditions)
 anova(lmm0, lmm1)
 ```
 
@@ -352,6 +370,7 @@ produced by two different people in these conditions is lower than in NI
 condition.
 
 ```{r variance-test}
+## Model which included independent terms for the variance togehter for No Instruction and Coin Tossin Conditions and separetly for Stock Market
 lmm_zero_coin0 <- lmer(
     formula = log(cmx_w)~ Condition + id +
         (0 + I(dummy(Condition, "No Instruction") + dummy(Condition, "Coin Tossing")) | id) +
@@ -360,6 +379,7 @@ lmm_zero_coin0 <- lmer(
     REML = FALSE
 )
 
+## Model which included independent terms for the variance togehter for the No Instruction and Stock Market Conditions and separetly for Stock Market
 lmm_zero_stock0 <- lmer(
   formula = log(cmx_w) ~ Condition + id +
     (0 + I(dummy(Condition, "No Instruction") + dummy(Condition, "Stock Market")) | id) +
@@ -367,7 +387,7 @@ lmm_zero_stock0 <- lmer(
   data = seq8,
   REML = FALSE)
                   
-
+## Define linear mixed model for the rolling window of length 8 with subject-specific random intercepts and slopes (for task description conditions)
 lmm_zero <- lmer(
     formula = log(cmx_w) ~ Condition + id +
         (0 + dummy(Condition, "No Instruction") | id) +
@@ -377,11 +397,13 @@ lmm_zero <- lmer(
     REML = FALSE
 )
 
+## Perform deviance analysis (compare models)
 (aov_zero_coin <- anova(lmm_zero_coin0, lmm_zero))
 (aov_zero_stock <- anova(lmm_zero_stock0, lmm_zero))
 
 ```
 ```{r plot3, include = TRUE, fig.cap = "Estimated standard deviations (with $95%$ CI based on likelihood profiling) of the distributions of random intercepts in the rolling window model (with length 8) in the three experimental conditions. The standard deviation of the residual distribution serves as a reference point. In NI condition between-subjects variance of the algorithmic complexity was higher than in SMI ($p = .012$) and CTI conditions ($p = .001$)."}
+## Create data set with random effects
 eff <- tibble(
     effect = fct_inorder(c("No Instruction", "Stock Market", "Coin Tossing", "Residuals")),
     sd = as.data.frame(VarCorr(lmm1))$sdcor,
@@ -389,6 +411,7 @@ eff <- tibble(
     hi = ci[, 2]
 )
 
+## Create an object for the plot of the distribution of random intercepts in the rolling window mode (with length 8)
 figure3 <- eff %>%
     mutate(effect = factor(effect, levels = c( "No Instruction", "Stock Market", "Coin Tossing", "Residuals"))) %>%
     ggplot(aes(x = effect, y = sd, color = effect)) +
@@ -401,8 +424,12 @@ figure3 <- eff %>%
                 annotations = c("p = .012", "p =.001"),
                 step_increase = .1) +
     
-    labs(x = "Conditions", y = "Standard deviation of the Aglorithmic Complexity", color = "")
+    labs(x = "Conditions", y = "Standard deviation of the Algorithmic Complexity", color = "")
+
+## Plot the figure
 figure3
+
+## Write out the figure to the file
 figure3 %>%
   ggsave(filename = file.path(FIG,"figure_3.png"),
        device = "png",
@@ -412,6 +439,7 @@ figure3 %>%
 ```
 
 ```{r table1, include=TRUE}
+## Write out the specification of the model in a table
 Predictors_names <- rownames(coef(summary(lmm1)))
 coef(summary(lmm1)) %>% 
   as.tibble() %>% 
@@ -466,9 +494,8 @@ political surveys or scientific research. Depending on the declared length of
 a study users are gratified with points which they can exchange for prizes.
 
 ```{r load-study2-data}
+## Load Study 2 data
 data2 <- read.csv2(file.path(DATA, "Study2.csv")) %>%
-  #rename(Condition = warunek,
-  #       need_for_cognition = potrzeba_poznania) %>%
   mutate(Condition = as.factor(Condition),
          IsHomogenous = if_else(Condition == "homogeneous", 0, 1),
          id = as.factor(id))
@@ -527,17 +554,25 @@ complexity of each series was normalized because although the instruction
 asked to produce 12 elements binary series the lengths varied.
 
 ```{r model-all}
+## Create dummy variable for contrasts
 data2$Condition0 <- as.ordered(data2$Condition)
 contrasts(data2$Condition0) <- "contr.treatment"
 
+## Define a generalized additive mixed model
 gamm1 <- gamm(cmx ~ need_for_cognition +
                Condition0 +
                s(ids, bs = 'tp', k = 10) +
                s(ids, by = Condition0, bs = 'tp', k = 10),
               random = list(id =~ 1, id =~ ids),
               data = data2)
+
+## Print out summary of gam model
 summary(gamm1$gam)
+
+## Print out summary of lme model
 summary(gamm1$lme)
+
+## Compute conditional and marginal coefficient of terminnation for mixed models
 r.squaredGLMM(gamm1$lme)
 ```
 ### Results
@@ -585,6 +620,7 @@ with a tendency to engage in intellectually challenging tasks performed
 better in random-series generation tasks.
 
 ```{r plot4, include = TRUE, fig.cap = "The trend curve for normalized algorithmic complexity for subsequent generated series with 95% confidence interval. For each series produced by participants, we estimated its algorithmic complexity. Therefore, each participant was represented by ten data points ordered in time sequences. The algorithmic complexity of each series was normalized because, even though the instruction asked to produce 12-elements binary sequences, the lengths varied."}
+## Create data set with estimated non-linear trend and standard errors
 data_plt4 <- get_predictions(gamm1$gam,
                         cond = list(ids = seq(min(data2$ids),
                                               max(data2$ids),
@@ -592,6 +628,7 @@ data_plt4 <- get_predictions(gamm1$gam,
                         se = TRUE,
                         print.summary = FALSE)
 
+## Create an object for the plot of the trend curve
 figure4 <- data_plt4 %>%
   ggplot(aes(x = ids, y = fit)) +
   geom_line(aes(color = Condition0), show.legend = FALSE)  +
@@ -599,7 +636,11 @@ figure4 <- data_plt4 %>%
   scale_x_continuous(breaks=seq(0,10,1))+
   ylab("Normalized Algorithmic Complexity") +
   xlab("Series Number")
+
+## Plot the figure
 figure4 
+
+## Write out the figure to the file
 figure4 %>%
   ggsave(filename = file.path(FIG,"figure_4.png"),
        device = "png",

@@ -1,0 +1,86 @@
+Study 1.
+
+Procedure and design:
+
+The experiment followed a 2 x 3 factorial design with two between-subjects factors: the mathematical experience and the task description. Participants were two groups of students recruited either from the Psychology or Chemistry faculties at the University of Warsaw. We assumed that students who chose as their major psychology had a relatively small exposure to concepts related to randomness while students from the Faculty of Chemistry were more familiar with them due to their generally better quantitative training. We based this assumption on the number of obligatory courses students had to take in both programs. For chemistry students, it was nearly 200 hours of classes related to math, physics, and statistics during the first three years, while for psychology it was just 90 hours of applied statistics over five years. In both groups, participants were assigned randomly to one of the three experimental conditions: 1) No Instruction (NI); 2) Coin Tossing Instruction (CTI); and 3) Stock Market Instruction (SMI). In all three conditions, we used custom software to run the experiment. Every 1.25 second it displayed a red square for .75 second. Furthermore, in the No Instruction condition participants were simply asked to select randomly and press one of the two predefined keys every time they saw the red square. In the Coin Tossing condition, participants were instructed to imagine a toss of a fair coin whenever they saw the red square and press either key marked as tails or heads. In the Stock Market condition, participants were asked to imagine a stock market chart and to assume that price fluctuations were random. They were instructed to try to predict whether the price in the next time step will go up or down and to press either key marked up or down. 
+
+Raw data:
+
+The raw data is a huge file with multiple columns because it is in the so-called wide format. The first raw depicts names of variables and the following rows describe participants. Each response of the participant was put in a separate column therefore there are more than 1000 columns.
+
+Age -- exact age in years.
+
+Sex -- gender of the participants.
+    f - female;
+    m - male.
+
+Hand -- dominant hand.
+    r - right-handed,
+    l - left-handed.
+
+Condition -- task instruction condition.
+    coin - Coin Tossing Instruction,
+    stock - Stock Market Insutrcion,
+    zero - No Instruction.
+
+Faculty -- Faculty at the Univesity of Warsaw.
+    chemistry - Faculty of Chemistry at the Univesity of Warsaw,
+    psychology - Faculty of Psychology at the University of Warsaw.
+
+X1:X1016 -- responses to the experimental task. Regardless of the instruction participants response was recorded as either 0 or 1. Although the participants were instructed to only press relevant keys when they saw the red square (it was displayed exactly 300 times) some pressed it more and some less than 300 times. Therefore, the length of the series varied between subjects from 218 to 1016 elements (Median = 300).
+
+Processed data:
+
+We used “pybdm” library from python to estimate the algorithmic complexity of the series (please read README.md for further details). For each participant, we computed an overall algorithmic complexity of the entire sequence as well as vectors of complexity estimates in rolling windows of length 8 (script to compute other lengths might be found in Supplementary_Materials.Rmd, however, please, read first README.md). Therefore, we created two new data sets:
+1. Study1.csv - data in the so-called wide format, where a participant is a record.
+2. Study1_seq8.csv - data in the so-called long format, where the measurement is a record.
+
+Study1.csv:
+
+id -- a unique participant's number.
+
+Sex -- gender of the participants.
+    f - female;
+    m - male.
+
+Hand -- dominant hand.
+    r - right-handed,
+    l - left-handed.
+
+Condition -- task instruction condition.
+    Coin Tossing Instruction,
+    Stock Market Insutrcion,
+    No Instruction.
+
+Faculty -- Faculty at the Univesity of Warsaw.
+    chemistry - Faculty of Chemistry at the Univesity of Warsaw,
+    psychology - Faculty of Psychology at the University of Warsaw.
+
+cmx - Algorithmic Complexity measure estimated for the whole series with pybdm package.
+
+Study1_seq8.csv
+
+id -- a unique participant's number.
+
+idx - series number.
+
+Sex -- gender of the participants.
+    f - female;
+    m - male.
+
+Hand -- dominant hand.
+    r - right-handed,
+    l - left-handed.
+
+Condition -- task instruction condition.
+    Coin Tossing Instruction,
+    Stock Market Insutrcion,
+    No Instruction.
+
+Faculty -- Faculty at the Univesity of Warsaw.
+    chemistry - Faculty of Chemistry at the Univesity of Warsaw,
+    psychology - Faculty of Psychology at the University of Warsaw.
+
+cmx - Algorithmic Complexity measure estimated for the whole series with "pybdm" package.
+
+cmx_w - Algorithmic Complexity measure for the rolling window of length 8 estimated with "pybdm" package.
