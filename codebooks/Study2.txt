@@ -95,4 +95,4 @@ Education_level -- the answer to the question: ''What was the last level of educ
 
 need_for_cognition -- score in the Polish version of the Need for Cognition Scale.
 
-cmx - Algorithmic Complexity measure estimated for the whole series with "pybdm" package.
+cmx -- Algorithmic Complexity measure estimated for the whole series with "pybdm" package.

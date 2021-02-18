@@ -81,6 +81,6 @@ Faculty -- Faculty at the Univesity of Warsaw.
     chemistry - Faculty of Chemistry at the Univesity of Warsaw,
     psychology - Faculty of Psychology at the University of Warsaw.
 
-cmx - Algorithmic Complexity measure estimated for the whole series with "pybdm" package.
+cmx -- Algorithmic Complexity measure estimated for the whole series with "pybdm" package.
 
-cmx_w - Algorithmic Complexity measure for the rolling window of length 8 estimated with "pybdm" package.
+cmx_w -- Algorithmic Complexity measure for the rolling window of length 8 estimated with "pybdm" package.
