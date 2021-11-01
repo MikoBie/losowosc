@@ -48,8 +48,9 @@ data_long <- gather(data, key = "Index", value = "Bit", matches("^d\\d")) %>%
     arrange(id) %>%
     group_by(id) %>% 
     mutate(idx = 1:n()) %>%
-    filter(idx < 313) %>%
+    #filter(idx < 313) %>%
     summarize(seq = list(Bit)) %>%
+    filter(lengths(seq) < 314) %>%
     ungroup 
 ``` 
 
@@ -63,7 +64,7 @@ from pybdm import PartitionIgnore, PartitionRecursive
 
 ## Create a function to compute algorithmic complexity in the window of length 8
 def window_bdm(seq, bdm, k=8):
-    return np.array([ bdm.bdm(seq[i:(i+k)]) for i in range(len(seq) - k) ])
+    return np.array([ bdm.nbdm(seq[i:(i+k)]) for i in range(len(seq) - k) ])
 
 ## Load r object to Python    
 data = r.data_long
