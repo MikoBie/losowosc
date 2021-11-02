@@ -9,6 +9,7 @@
 *.pages
 *.docx
 **/*.png
+**/*.jpg
 
 **/*.Rproj
 .Rproj.user

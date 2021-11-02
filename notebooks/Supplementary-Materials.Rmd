@@ -14,11 +14,23 @@ csl: apa-single-spaced.csl
 
 ## README
 
-Herein we present linear mixed models for Study 1 of different rolling window lengths. The rolling algorithmic complexity was calculated for window lengths from 5 to 9. This corresponds to the estimated capacity of the working memory which is usually said to be 7 ± 2 elements [@baddeley1986]. 
+Herein, first, we present linear mixed models for Study 1 of different rolling
+window lengths computed on all observations. The rolling algorithmic complexity
+was calculated for window lengths from 5 to 9. This corresponds to the estimated
+capacity of the working memory which is usually said to be 7 ± 2 elements
+[@baddeley1986]. Second, we perform the same analysis for Study 1 as in
+`Main.Rmd` but on all observations (in the `Main.Rmd` we excluded observations
+that exceeded 313 elements in random series generation task).
 
-For each length of the rolling window first, we compared models with different random effects. Second, we plotted diagnostic plots. Third, we computed the conditional and marginal coefficient of determination to select the model which explained the most variance.
+For each length of the rolling window first, we compared models with different
+random effects. Second, we plotted diagnostic plots. Third, we computed the
+conditional and marginal coefficient of determination to select the model which
+explained the most variance.
 
-*NOTE*: Although this is an `R` markdown we use package `reticulate` to import some functions from `python`. Therefore, this script requires having an Anaconda environment created. The detailed instruction on how to set up the virtual environment and how to use it is described in the README.md file.
+*NOTE*: Although this is an `R` markdown we use package `reticulate` to import
+some functions from `python`. Therefore, this script requires having an Anaconda
+environment created. The detailed instruction on how to set up the virtual
+environment and how to use it is described in the README.md file.
 
 ```{r setup_env, include=FALSE}
 # Globals
@@ -29,6 +41,7 @@ HERE <- file.path(ROOT, "notebooks")
 ```{r setup}
 library(magrittr)
 library(tidyverse)
+library(quantreg) 
 library(reticulate)
 library(lattice)
 library(zoo)
@@ -37,6 +50,7 @@ library(acss)
 library(haven)
 library(nlme)
 library(kableExtra)
+library(ggpubr)
 ## Set ggplot theme
 theme_set(theme_classic())
 ## Load conda environment
@@ -129,7 +143,8 @@ data <- select(data, -matches("^d\\d")) %>%
     left_join(select(seq8, id, cmx), by = "id") %>%
     mutate(Condition = case_when(Condition == "coin" ~ "Coin Tossing",
                                  Condition == "stock" ~ "Stock Market",
-                                 Condition == "zero" ~ "No Instruction"))
+                                 Condition == "zero" ~ "No Instruction")) %>%
+    mutate(Condition = factor(Condition, levels = c( "No Instruction", "Stock Market", "Coin Tossing")))
 
 ## Prepare data for mixed models
 seq5 <- seq5 %>%
@@ -355,4 +370,122 @@ r.squaredGLMM(model9.6)
 summary(model9.5)
 
 ```
+
+## Overall 
+
+In this part, we present the same analysis as in `Main.Rmd` but without
+exclusion of observations that exceeded 314 elements.
+
+```{r wilcox-faculty}
+## Compute Wicoxon Rank Test between Chemistry and Psychology students
+c(
+    list(Faculty = data),
+    split(data, data$Condition)
+)%>%
+    map2(names(.), ~ {
+        mutate(tidy(wilcox.test(cmx ~ Faculty, data = .x, exact = FALSE)), condition = .y, .before = 1L)
+    }) %>%
+    bind_rows %>%
+    select(
+        Condition = condition,
+        W = statistic,
+        p = p.value
+    )
+```
+
+Before testing our main hypotheses, we investigated whether there were
+differences between the two groups of participants: students from the Chemistry
+and Psychology Faculties. We wanted to explore whether their knowledge and
+differences in the curriculum may have affected the outcomes. We used a
+non-parametric test to assess whether the distributions of algorithmic
+complexity were systematically different between groups of observations. The
+Wilcoxon Rank Sum Test revealed that the main difference was not significant, $W
+= 4191.5,\ p=.9866$. The further analysis within experimental conditions also
+did not yield significant differences in distributions of algorithmic complexity
+between faculties (NI, $W = 451.5,\ p = .8083$; SMI, $W = 531,\ .3447$; CTI,
+$W = 422,\ p = .3184$). Therefore, there was no reason to further explore these
+differences in later analyses.
+
+```{r kurskal-condition}
+## Perform Kruskal-Wallis for experimental conditions
+kruskal.test(cmx~Condition, data = data)
+```
+```{r quantreg_condition}
+# Full quantile process model
+proc <- rq(cmx~Condition, tau = -1, data = data, method = "br")
+
+# Quartile model
+qreg <- rq(cmx~Condition, tau = 1:3/4, data = data, method = "br")
+summary(qreg, se = "rank")
+```
+
+
+To test the hypothesis regarding the effect of the task description
+(H1) on the overall algorithmic complexity of human-generated
+series, we used also a non-parametric test to assess whether the distributions
+of algorithmic complexity were systematically different between groups of
+observations. The Kruskal-Wallis test revealed a significant difference between
+distributions of algorithmic complexity in task description conditions,
+$\chi^2(2) = 7.0051, p = .0301$. The closer visual examination of the histograms
+revealed that the main difference between distributions was in their left tails
+(see the left panel of Figure 1). In the NI condition, the
+frequency of the lowest results is relatively higher than in the CTI and SMI
+conditions. Therefore, to better understand this effect, we used quantile
+regression [@koenker_quantile_2001] to estimate the full quantile process
+in the three experimental groups as well as calculate $95\%$ confidence
+intervals for the first, second, and third quartiles. As
+Figure 1 shows, there is a clear gap between low quantiles
+(left tail) in the No Instruction condition compared to other conditions.
+Furthermore, confidence intervals showed that there are significant differences
+in terms of 1st quartiles between the NI condition and both SMI, $95\%\ CI\
+[.087\ .458]$, and CTI conditions, $95\%\ CI\ [.085\ .408]$. Similarly, in the
+case of the second quartile, significant differences were only observed between
+NI and CTI $95\%\ CI\ [.048\ .087]$. We did not observe significant differences
+in the case of the third quartile. These results confirm that the gap visible in
+Figure 1 is statistically significant. This indicates that both the Stock Market
+and Coin Tossing conditions prevented participants from producing series of low
+algorithmic complexity. The differences in the task description conditions seem
+not to affect the upper parts of the distributions (roughly above median). Thus,
+the results suggest that the task description does not enhance the ability to
+generate random-like sequences, as many researchers believed [@ayton1991], but
+rather helps to activate it whatsoever, resulting in significantly less
+trivially non-random sequences being produced.
+
+```{r plot2, include = TRUE, fig.cap = "Left panel: Distributions of normalized algorithmic complexity in the experimental groups. Right panel: The distributions of the normalized algorithmic complexity of series across quantiles. In the first quartile, the distribution of normalized algorithmic complexity of series in NI condition was different than in SMI ($95%\ CI\ [.087\ .458]$) and CTI conditions ($95%\ CI\ [.085\ .408]$). Similarly, in the case of the second quartile, significant differences were only observed between NI and CTI $95%\ CI\ [.048\ .087]$. There were no significant differences between the distributions in the groups in the case of the third quartile."}
+## Create an object for the plot of the histogram of normalized algorithmic complexity for each experimental condition
+plt1 <- data %>%
+    ggplot(aes(x = cmx, fill = Condition)) +
+    geom_histogram(bins = 10, color = "white") +
+    facet_wrap(~Condition, ncol = 1L) +
+    labs(x = "Normalized Algorithmic Complexity", y = "Count") +
+    guides(fill = FALSE)
+
+## Create an object for the plot of distribution of normalized algorithmic complexity for each experimental condition
+plt2 <- t(proc$sol) %>%
+    as_tibble %>%
+    select(
+        tau,
+        zero  = `(Intercept)`,
+        coin  = `ConditionCoin Tossing`,
+        stock = `ConditionStock Market`
+    ) %>%
+    mutate(
+        "Coin Tossing" = zero + coin,
+        "Stock Market" = zero + stock,
+        "No Instruction" = zero
+    ) %>%
+    pivot_longer(-c(tau:stock), names_to = "Condition", values_to = "Qbar") %>%
+    mutate(Condition = factor(Condition, levels = c("No Instruction", "Stock Market", "Coin Tossing"))) %>%
+    ggplot(aes(x = tau, y = Qbar, color = Condition, group = Condition)) +
+    geom_line(show.legend = FALSE) +
+    geom_vline(xintercept = .5, linetype = 2L) +
+    labs(x = "Quantile", y = "Normalized Algorithmic Complexity", color = "Conditions")
+
+## Arrange both plots as one figure
+figure2 <- ggarrange(plt1,plt2)
+
+## Plot the figure
+figure2
+```
+
 ## References
