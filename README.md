@@ -7,7 +7,7 @@ This is a repository for the article in which we investigated the randomness of 
 The repository is organized as follows:
 
 * [data](data) - it consists of two files in `csv` format with raw data for Study 1 and Study 2, and one folder with processed data for both studies. In the latter, you will find two files for Study 1 (`Study1.csv` and `Study1_seq8.csv`) and one for Study 2 -- `Study2.csv`. 
-* [codebooks](codebooks) - it consists codebooks for all data in `txt` format. However, they are aggregated by the study. It means that for example codebook for Study 1 consists of variables description for both, raw and processed, data.  
+* [codebooks](codebooks) - it consists codebooks for all data in `txt` format. However, they are aggregated by the study. It means that for example codebook for Study 1 consists of variables description for both, raw and processed data.  
 * [notebooks](notebooks) -  this folder is named after `R` notebooks because we performed all the statistical analysis using `R` programming language. It consists of three files: `Main.Rmd`, `Process_raw_data.Rmd`, and `Supplementary_Materials.Rmd`. Each script is written in `R` programming language, however, `Process_raw_data.Rmd` and `Supplementary_Materials.Rmd` require also having `python3` virtual environment created (see Setup to learn how to do it).
 * [png](png) - it contains all pictures used in the article in the png format.
 
