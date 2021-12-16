@@ -1,6 +1,6 @@
 # `The effect of context and individual differences in human-generated series`
 
-This is a repository for the article in which we investigated the randomness of human-generated series. Unlike the majority of the research on the topic, we focused on the effect of context on the human-generated randomness and individual difference in producing responses at random. In two studies we tested four hypotheses using modern and objective methods for quantifying randomness grounded in the Algorithmic Information Theory and based on the notion of algorithmic (Kolmogorov) complexity. In the repository, you will find data sets (raw and processed) and all scripts for data processing, analysis, and plotting the charts.
+This is a repository for the article ['The effect of contex and individual differences in human-generated series'](https://onlinelibrary.wiley.com/doi/full/10.1111/cogs.13072) published in Cognitive Sciene. We investigated the randomness of human-generated series. Unlike the majority of the research on the topic, we focused on the effect of context on the human-generated randomness and individual difference in producing responses at random. In two studies we tested four hypotheses using modern and objective methods for quantifying randomness grounded in the Algorithmic Information Theory and based on the notion of algorithmic (Kolmogorov) complexity. In the repository, you will find data sets (raw and processed) and all scripts for data processing, analysis, and plotting the charts.
 
 ## The structure of the repository
 
